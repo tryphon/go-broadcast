@@ -9,7 +9,43 @@ import (
 	alsa "github.com/Narsil/alsa-go"
 	"github.com/grd/ogg"
 	"github.com/grd/vorbis"
+	"time"
 )
+
+func main() {
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: ", os.Args[0], "http://host:port/mount_point.ogg")
+		os.Exit(1)
+	}
+	url, err := url.Parse(os.Args[1])
+	checkError(err)
+
+	client := &http.Client{}
+
+	request, err := http.NewRequest("GET", url.String(), nil)
+	checkError(err)
+
+	response, err := client.Do(request)
+	if response.Status != "200 OK" {
+		fmt.Println(response.Status)
+		os.Exit(2)
+	}
+
+	var (
+		oggDecoder OggDecoder
+		vorbisDecoder VorbisDecoder
+		alsaSink AlsaSink
+	)
+
+	alsaSink.Init()
+	vorbisDecoder.audioHandler = &alsaSink
+	oggDecoder.handler = &vorbisDecoder
+
+	reader := response.Body
+	for {
+		oggDecoder.Read(reader)
+	}
+}
 
 type OggDecoder struct {
 	handler OggHandler
@@ -34,13 +70,11 @@ func (decoder *OggDecoder) Read(reader io.Reader) {
 	decoder.oy.Wrote(readLength)
 
 	for decoder.oy.PageOut(&decoder.og) == 1 {
-		fmt.Printf("Page number: %d, granule pos: %d\n", decoder.og.PageNo(), decoder.og.GranulePos())
-
 		if decoder.oss.SerialNo != decoder.og.SerialNo() {
 			fmt.Printf("Init Ogg Stream State %d\n", decoder.og.SerialNo())
 			decoder.oss.Init(decoder.og.SerialNo())
 
-			decoder.handler.NewStream(decoder.og.SerialNo())
+ 			decoder.handler.NewStream(decoder.og.SerialNo())
 		}
 
 		err = decoder.oss.PageIn(&decoder.og)
@@ -78,6 +112,7 @@ type VorbisDecoder struct {
 	vb vorbis.Block    // local working space for packet PCM decode
 
 	audioHandler AudioHandler
+	sampleCount int64
 }
 
 func (decoder *VorbisDecoder) NewStream(serialNo int32) {
@@ -123,6 +158,14 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 			samples = vorbis.SynthesisPcmout(&decoder.vd, &rawFloatBuffer)
 
 			if samples > 0 {
+				decoder.sampleCount += int64(samples)
+
+				if packet.GranulePos > -1 {
+					// fmt.Printf("sampleCount: %d\n", decoder.sampleCount)
+					// fmt.Printf("granule pos: %d\n", packet.GranulePos)
+					fmt.Printf("%v : granule pos / sampleCount : %d\n", time.Now(), packet.GranulePos - decoder.sampleCount)
+				}
+
 				// fmt.Printf("read %d samples\n", samples)
 				if decoder.audioHandler != nil {
 					audio := new(Audio)
@@ -201,41 +244,6 @@ func (alsa *AlsaSink) AudioOut(audio *Audio) {
 	}
 
 	// fmt.Printf("wrote %d bytes in alsa\n", alsaWriteLength)
-}
-
-func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: ", os.Args[0], "http://host:port/page")
-		os.Exit(1)
-	}
-	url, err := url.Parse(os.Args[1])
-	checkError(err)
-
-	client := &http.Client{}
-
-	request, err := http.NewRequest("GET", url.String(), nil)
-	checkError(err)
-
-	response, err := client.Do(request)
-	if response.Status != "200 OK" {
-		fmt.Println(response.Status)
-		os.Exit(2)
-	}
-
-	var (
-		oggDecoder OggDecoder
-		vorbisDecoder VorbisDecoder
-		alsaSink AlsaSink
-	)
-
-	alsaSink.Init()
-	vorbisDecoder.audioHandler = &alsaSink
-	oggDecoder.handler = &vorbisDecoder
-
-	reader := response.Body
-	for {
-		oggDecoder.Read(reader)
-	}
 }
 
 func checkError(err error) {
