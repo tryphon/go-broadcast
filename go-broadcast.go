@@ -21,15 +21,8 @@ func main() {
 	checkError(err)
 
 	client := &http.Client{}
-
 	request, err := http.NewRequest("GET", url.String(), nil)
 	checkError(err)
-
-	response, err := client.Do(request)
-	if response.Status != "200 OK" {
-		fmt.Println(response.Status)
-		os.Exit(2)
-	}
 
 	var (
 		oggDecoder OggDecoder
@@ -69,9 +62,28 @@ func main() {
 
 	oggDecoder.handler = &vorbisDecoder
 
-	reader := response.Body
 	for {
-		oggDecoder.Read(reader)
+		fmt.Println("New HTTP request")
+		response, err := client.Do(request)
+	  if err == nil && response.Status == "200 OK" {
+			reader := response.Body
+
+			for oggDecoder.Read(reader) {
+			}
+
+			fmt.Println("End of HTTP stream")
+
+			oggDecoder.Reset()
+			vorbisDecoder.Reset()
+		} else {
+			if err != nil {
+				fmt.Println("Error ", err.Error())
+			} else {
+				fmt.Println(response.Status)
+			}
+
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
@@ -84,16 +96,24 @@ type OggDecoder struct {
 	op  ogg.Packet      // one raw packet of data for decode
 }
 
+func (decoder *OggDecoder) Reset() {
+	decoder.oy.Reset()
+	decoder.oss.Reset()
+	decoder.og.Reset()
+}
+
 type OggHandler interface {
 	NewStream(serialNo int32)
 	PacketOut(packet *ogg.Packet)
 }
 
-func (decoder *OggDecoder) Read(reader io.Reader) {
+func (decoder *OggDecoder) Read(reader io.Reader) (bool) {
 	buffer := decoder.oy.Buffer(4096)
 
 	readLength, err := reader.Read(buffer)
-	checkError(err)
+	if (err != nil) {
+		return false
+	}
 
 	decoder.oy.Wrote(readLength)
 
@@ -106,7 +126,9 @@ func (decoder *OggDecoder) Read(reader io.Reader) {
 		}
 
 		err = decoder.oss.PageIn(&decoder.og)
-		checkError(err)
+		if err != nil {
+			return false
+		}
 
 		for decoder.oss.PacketOut(&decoder.op) == 1 {
 			// fmt.Printf("PacketOut\n");
@@ -119,6 +141,8 @@ func (decoder *OggDecoder) Read(reader io.Reader) {
 			decoder.handler.PacketOut(&decoder.op)
 		}
 	}
+
+	return true
 }
 
 type AudioHandler interface {
@@ -141,6 +165,15 @@ type VorbisDecoder struct {
 
 	audioHandler AudioHandler
 	sampleCount int64
+}
+
+func (decoder *VorbisDecoder) Reset() {
+	decoder.vi.Clear()
+	decoder.vc.Clear()
+	decoder.vd.Clear()
+	decoder.vb.Clear()
+
+	decoder.streamStatus = ""
 }
 
 func (decoder *VorbisDecoder) NewStream(serialNo int32) {
