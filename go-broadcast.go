@@ -37,8 +37,36 @@ func main() {
 		alsaSink AlsaSink
 	)
 
+	cache := true
+
 	alsaSink.Init()
-	vorbisDecoder.audioHandler = &alsaSink
+
+	if cache  {
+		audioChannel := make(chan *Audio, 1500)
+
+		go func() {
+			time.Sleep(10 * time.Second)
+			for {
+				audio := <-audioChannel
+				// fmt.Printf("Play audo %d\n", audio.sampleCount)
+				alsaSink.AudioOut(audio)
+			}
+		}()
+
+		vorbisDecoder.audioHandler = AudioHandlerFunc(func(audio *Audio) {
+			audioChannel <- audio
+		})
+	} else {
+		vorbisDecoder.audioHandler = &alsaSink
+	}
+
+	go func() {
+		for {
+			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), vorbisDecoder.sampleCount - alsaSink.sampleCount)
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	oggDecoder.handler = &vorbisDecoder
 
 	reader := response.Body
@@ -93,14 +121,14 @@ func (decoder *OggDecoder) Read(reader io.Reader) {
 	}
 }
 
-func New(handler OggHandler) *OggDecoder {
-	decoder := new(OggDecoder)
-	decoder.handler = handler
-	return decoder
-}
-
 type AudioHandler interface {
 	AudioOut(audio *Audio)
+}
+
+type AudioHandlerFunc func(audio *Audio)
+
+func (f AudioHandlerFunc) AudioOut(audio *Audio) {
+    f(audio)
 }
 
 type VorbisDecoder struct {
@@ -163,7 +191,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 				if packet.GranulePos > -1 {
 					// fmt.Printf("sampleCount: %d\n", decoder.sampleCount)
 					// fmt.Printf("granule pos: %d\n", packet.GranulePos)
-					fmt.Printf("%v : granule pos / sampleCount : %d\n", time.Now(), packet.GranulePos - decoder.sampleCount)
+					// fmt.Printf("%v vorbis sampleCount : %d\n", time.Now(), decoder.sampleCount)
 				}
 
 				// fmt.Printf("read %d samples\n", samples)
@@ -220,6 +248,7 @@ func (audio *Audio) PcmBytes() ([]byte) {
 
 type AlsaSink struct {
 	handle alsa.Handle
+	sampleCount int64
 }
 
 func (sink *AlsaSink) Init() {
@@ -239,9 +268,15 @@ func (alsa *AlsaSink) AudioOut(audio *Audio) {
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
 	checkError(err)
 
+	wroteSamples := int64(alsaWriteLength / len(pcmBytes) * audio.sampleCount)
+	// fmt.Printf("wrote %d samples in alsa\n", wroteSamples)
+	alsa.sampleCount += wroteSamples
+
 	if alsaWriteLength != len(pcmBytes) {
 	 	fmt.Fprintf(os.Stderr, "Did not write whole alsa buffer (Wrote %v, expected %v)\n", alsaWriteLength, pcmBytes)
 	}
+
+	// fmt.Printf("%v alsa sampleCount : %d\n", time.Now(), alsa.sampleCount)
 
 	// fmt.Printf("wrote %d bytes in alsa\n", alsaWriteLength)
 }
