@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
-	"os"
-	"io"
 	alsa "github.com/Narsil/alsa-go"
 	"github.com/grd/ogg"
 	"github.com/grd/vorbis"
+	"io"
+	"net/http"
+	"net/url"
+	"os"
 	"time"
 )
 
@@ -24,17 +24,20 @@ func main() {
 	request, err := http.NewRequest("GET", url.String(), nil)
 	checkError(err)
 
+	request.Header.Add("Cache-Control", "no-cache")
+	request.Header.Add("User-Agent", "Go Broadcast v0")
+
 	var (
-		oggDecoder OggDecoder
+		oggDecoder    OggDecoder
 		vorbisDecoder VorbisDecoder
-		alsaSink AlsaSink
+		alsaSink      AlsaSink
 	)
 
 	cache := true
 
 	alsaSink.Init()
 
-	if cache  {
+	if cache {
 		audioChannel := make(chan *Audio, 1500)
 
 		go func() {
@@ -55,7 +58,7 @@ func main() {
 
 	go func() {
 		for {
-			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), vorbisDecoder.sampleCount - alsaSink.sampleCount)
+			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), vorbisDecoder.sampleCount-alsaSink.sampleCount)
 			time.Sleep(1 * time.Second)
 		}
 	}()
@@ -65,7 +68,7 @@ func main() {
 	for {
 		fmt.Println("New HTTP request")
 		response, err := client.Do(request)
-	  if err == nil && response.Status == "200 OK" {
+		if err == nil && response.Status == "200 OK" {
 			reader := response.Body
 
 			for oggDecoder.Read(reader) {
@@ -107,11 +110,11 @@ type OggHandler interface {
 	PacketOut(packet *ogg.Packet)
 }
 
-func (decoder *OggDecoder) Read(reader io.Reader) (bool) {
+func (decoder *OggDecoder) Read(reader io.Reader) bool {
 	buffer := decoder.oy.Buffer(4096)
 
 	readLength, err := reader.Read(buffer)
-	if (err != nil) {
+	if err != nil {
 		return false
 	}
 
@@ -122,7 +125,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (bool) {
 			fmt.Printf("Init Ogg Stream State %d\n", decoder.og.SerialNo())
 			decoder.oss.Init(decoder.og.SerialNo())
 
- 			decoder.handler.NewStream(decoder.og.SerialNo())
+			decoder.handler.NewStream(decoder.og.SerialNo())
 		}
 
 		err = decoder.oss.PageIn(&decoder.og)
@@ -152,7 +155,7 @@ type AudioHandler interface {
 type AudioHandlerFunc func(audio *Audio)
 
 func (f AudioHandlerFunc) AudioOut(audio *Audio) {
-    f(audio)
+	f(audio)
 }
 
 type VorbisDecoder struct {
@@ -164,7 +167,7 @@ type VorbisDecoder struct {
 	vb vorbis.Block    // local working space for packet PCM decode
 
 	audioHandler AudioHandler
-	sampleCount int64
+	sampleCount  int64
 }
 
 func (decoder *VorbisDecoder) Reset() {
@@ -188,28 +191,30 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 
 	switch decoder.streamStatus {
 	case "vorbis_init_info", "vorbis_init_comments", "vorbis_init_codebooks":
-		fmt.Printf("Init vorbis header %s.\n", decoder.streamStatus);
+		fmt.Printf("Init vorbis header %s.\n", decoder.streamStatus)
 
 		if vorbis.SynthesisHeaderIn(&decoder.vi, &decoder.vc, packet) < 0 {
-			fmt.Printf("This Ogg bitstream does not contain Vorbis audio data.\n");
+			// TODO we should close ogg and reader to retry
+			fmt.Printf("This Ogg bitstream does not contain Vorbis audio data.\n")
 			os.Exit(1)
 		}
 
 		switch decoder.streamStatus {
 		case "vorbis_init_info":
-			fmt.Printf("Bitstream is %d channel, %dHz\n",decoder.vi.Channels(),decoder.vi.Rate())
+			fmt.Printf("Bitstream is %d channel, %dHz\n", decoder.vi.Channels(), decoder.vi.Rate())
 			decoder.streamStatus = "vorbis_init_comments"
 		case "vorbis_init_comments":
 			fmt.Printf("comments: %v\n", decoder.vc.UserComments())
 			fmt.Printf("vendor: %v\n", decoder.vc.Vendor())
 			decoder.streamStatus = "vorbis_init_codebooks"
 		case "vorbis_init_codebooks":
-			if vorbis.SynthesisInit(&decoder.vd,&decoder.vi) == 0 {
+			if vorbis.SynthesisInit(&decoder.vd, &decoder.vi) == 0 {
 				decoder.vb.Init(&decoder.vd)
 			}
 			decoder.streamStatus = "vorbis_decode"
 		}
 	case "vorbis_decode":
+		// TODO can raise : panic: runtime error: index out of range
 		if vorbis.Synthesis(&decoder.vb, packet) == 0 {
 			vorbis.SynthesisBlockin(&decoder.vd, &decoder.vb)
 		}
@@ -234,7 +239,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 
 					decoder.audioHandler.AudioOut(audio)
 				}
-				vorbis.SynthesisRead(&decoder.vd,samples)
+				vorbis.SynthesisRead(&decoder.vd, samples)
 			}
 		}
 	}
@@ -242,9 +247,9 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 }
 
 type Audio struct {
-	samples [][]float32
+	samples      [][]float32
 	channelCount int
-	sampleCount int
+	sampleCount  int
 }
 
 func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCount int) {
@@ -263,24 +268,24 @@ func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCo
 
 func floatSamplesToBytes(sample float32) (byte, byte) {
 	integerValue := int16(sample * 32768)
-	return byte(integerValue),byte(integerValue >> 8)
+	return byte(integerValue), byte(integerValue >> 8)
 }
 
-func (audio *Audio) PcmBytes() ([]byte) {
+func (audio *Audio) PcmBytes() []byte {
 	pcmSampleSize := 4
 	pcmBytesLength := audio.sampleCount * pcmSampleSize
 	pcmBytes := make([]byte, pcmBytesLength)
 
 	for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
-		pcmBytes[samplePosition * pcmSampleSize], pcmBytes[samplePosition * pcmSampleSize + 1] = floatSamplesToBytes(audio.samples[0][samplePosition])
-		pcmBytes[samplePosition * pcmSampleSize + 2], pcmBytes[samplePosition * pcmSampleSize + 3] = floatSamplesToBytes(audio.samples[1][samplePosition])
+		pcmBytes[samplePosition*pcmSampleSize], pcmBytes[samplePosition*pcmSampleSize+1] = floatSamplesToBytes(audio.samples[0][samplePosition])
+		pcmBytes[samplePosition*pcmSampleSize+2], pcmBytes[samplePosition*pcmSampleSize+3] = floatSamplesToBytes(audio.samples[1][samplePosition])
 	}
 
 	return pcmBytes
 }
 
 type AlsaSink struct {
-	handle alsa.Handle
+	handle      alsa.Handle
 	sampleCount int64
 }
 
@@ -306,7 +311,7 @@ func (alsa *AlsaSink) AudioOut(audio *Audio) {
 	alsa.sampleCount += wroteSamples
 
 	if alsaWriteLength != len(pcmBytes) {
-	 	fmt.Fprintf(os.Stderr, "Did not write whole alsa buffer (Wrote %v, expected %v)\n", alsaWriteLength, pcmBytes)
+		fmt.Fprintf(os.Stderr, "Did not write whole alsa buffer (Wrote %v, expected %v)\n", alsaWriteLength, pcmBytes)
 	}
 
 	// fmt.Printf("%v alsa sampleCount : %d\n", time.Now(), alsa.sampleCount)
