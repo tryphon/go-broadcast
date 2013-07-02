@@ -23,19 +23,29 @@ func (decoder *OggDecoder) Reset() {
 
 type OggHandler interface {
 	NewStream(serialNo int32)
-	PacketOut(packet *ogg.Packet)
+	PacketOut(packet *ogg.Packet) bool
 }
 
 func (decoder *OggDecoder) SetHandler(handler OggHandler) {
 	decoder.handler = handler
 }
 
-func (decoder *OggDecoder) Read(reader io.Reader) bool {
+func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
+	result = false
+
+	defer func() {
+		if recover() != nil {
+			fmt.Println("Exception occured")
+			result = false
+		}
+	}()
+
 	buffer := decoder.oy.Buffer(4096)
 
 	readLength, err := reader.Read(buffer)
+
 	if err != nil {
-		return false
+		return
 	}
 
 	decoder.oy.Wrote(readLength)
@@ -50,20 +60,26 @@ func (decoder *OggDecoder) Read(reader io.Reader) bool {
 
 		err = decoder.oss.PageIn(&decoder.og)
 		if err != nil {
-			return false
+			return
 		}
 
-		for decoder.oss.PacketOut(&decoder.op) == 1 {
-			// fmt.Printf("PacketOut\n");
+		var packetOutResult = 1;
+		for packetOutResult == 1 {
+			packetOutResult = decoder.oss.PacketOut(&decoder.op)
+			if packetOutResult == 1 {
+				if ! decoder.handler.PacketOut(&decoder.op) {
+					return
+				}
+			}
+		}
 
-			// if result < 1 {
-			// 	fmt.Printf("Error reading next packet.\n");
-			// 	os.Exit(1)
-			// }
-
-			decoder.handler.PacketOut(&decoder.op)
+		if packetOutResult < 0 {
+			fmt.Printf("PacketOutResult: %d\n", packetOutResult);
+			// the second page of a Ogg stream seems to return a nice -1 ...
+			// 	return false
 		}
 	}
 
-	return true
+	result = true
+	return
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/grd/ogg"
 	"github.com/grd/vorbis"
-	"os"
 )
 
 type VorbisDecoder struct {
@@ -41,7 +40,7 @@ func (decoder *VorbisDecoder) NewStream(serialNo int32) {
 	decoder.vc.Init()
 }
 
-func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
+func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 	if decoder.streamStatus == "" {
 		decoder.streamStatus = "vorbis_init_info"
 	}
@@ -53,7 +52,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 		if vorbis.SynthesisHeaderIn(&decoder.vi, &decoder.vc, packet) < 0 {
 			// TODO we should close ogg and reader to retry
 			fmt.Printf("This Ogg bitstream does not contain Vorbis audio data.\n")
-			os.Exit(1)
+			return false
 		}
 
 		switch decoder.streamStatus {
@@ -101,4 +100,5 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) {
 		}
 	}
 
+	return true
 }
