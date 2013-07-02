@@ -35,18 +35,27 @@ func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCo
 }
 
 func floatSamplesToBytes(sample float32) (byte, byte) {
-	integerValue := int16(sample * 32768)
+	integerValue := int16(sample * 32767)
 	return byte(integerValue), byte(integerValue >> 8)
 }
 
 func (audio *Audio) PcmBytes() []byte {
-	pcmSampleSize := 4
-	pcmBytesLength := audio.sampleCount * pcmSampleSize
+	pcmSampleSize := 2
+	pcmSampleSetSize := audio.channelCount * pcmSampleSize;
+	pcmBytesLength := audio.sampleCount * pcmSampleSetSize
 	pcmBytes := make([]byte, pcmBytesLength)
 
-	for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
-		pcmBytes[samplePosition*pcmSampleSize], pcmBytes[samplePosition*pcmSampleSize+1] = floatSamplesToBytes(audio.samples[0][samplePosition])
-		pcmBytes[samplePosition*pcmSampleSize+2], pcmBytes[samplePosition*pcmSampleSize+3] = floatSamplesToBytes(audio.samples[1][samplePosition])
+	if audio.samples != nil {
+		for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
+			if audio.samples[0] != nil {
+				pcmPosition := samplePosition*pcmSampleSetSize
+				pcmBytes[pcmPosition], pcmBytes[pcmPosition+1] = floatSamplesToBytes(audio.samples[0][samplePosition])
+			}
+			if audio.samples[1] != nil {
+				pcmPosition := (samplePosition*pcmSampleSetSize)+pcmSampleSize
+				pcmBytes[pcmPosition], pcmBytes[pcmPosition+1] = floatSamplesToBytes(audio.samples[1][samplePosition])
+			}
+		}
 	}
 
 	return pcmBytes
