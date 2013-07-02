@@ -20,6 +20,10 @@ type Audio struct {
 	sampleCount  int
 }
 
+func (audio *Audio) SampleCount() int {
+	return audio.sampleCount
+}
+
 func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCount int) {
 	audio.samples = make([][]float32, 2)
 	audio.channelCount = channelCount

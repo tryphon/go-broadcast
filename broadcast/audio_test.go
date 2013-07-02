@@ -64,3 +64,12 @@ func TestAudio_PcmBytes_ChannelContent(t *testing.T) {
 
 	}
 }
+
+func TestAudio_SampleCount(t *testing.T) {
+	audio := Audio{sampleCount: 1024}
+
+	if audio.SampleCount() != 1024 {
+		t.Errorf("Wrong SampleCount() value:\n got: %d\nwant: %d", audio.SampleCount(), 1024)
+	}
+
+}

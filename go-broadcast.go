@@ -43,7 +43,6 @@ func main() {
 			time.Sleep(10 * time.Second)
 			for {
 				audio := <-audioChannel
-				// fmt.Printf("Play audo %d\n", audio.sampleCount)
 				alsaSink.AudioOut(audio)
 			}
 		}()
