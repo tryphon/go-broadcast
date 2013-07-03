@@ -1,18 +1,18 @@
 package broadcast
 
 import (
+	"fmt"
+	"net"
 	"net/http"
 	"net/url"
-	"net"
 	"time"
-	"fmt"
 )
 
 type HttpInput struct {
-	Url string
-	request *http.Request
-	client http.Client
-	response *http.Response
+	Url        string
+	request    *http.Request
+	client     http.Client
+	response   *http.Response
 	connection net.Conn
 
 	oggDecoder    OggDecoder
@@ -20,19 +20,13 @@ type HttpInput struct {
 }
 
 func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
-	connection, err := net.DialTimeout(network, addr, 10 * time.Second)
+	connection, err := net.DialTimeout(network, addr, 10*time.Second)
 	if err != nil {
 		input.connection = nil
 		return nil, err
 	}
 
 	input.connection = connection
-
-	// TODO
-	// In our case, need to be updated after each read
-	//
-	// deadline := time.Now().Add(10 * time.Second)
-	// c.SetDeadline(deadline)
 
 	return connection, nil
 }

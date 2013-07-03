@@ -45,18 +45,18 @@ func floatSamplesToBytes(sample float32) (byte, byte) {
 
 func (audio *Audio) PcmBytes() []byte {
 	pcmSampleSize := 2
-	pcmSampleSetSize := audio.channelCount * pcmSampleSize;
+	pcmSampleSetSize := audio.channelCount * pcmSampleSize
 	pcmBytesLength := audio.sampleCount * pcmSampleSetSize
 	pcmBytes := make([]byte, pcmBytesLength)
 
 	if audio.samples != nil {
 		for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
 			if audio.samples[0] != nil {
-				pcmPosition := samplePosition*pcmSampleSetSize
+				pcmPosition := samplePosition * pcmSampleSetSize
 				pcmBytes[pcmPosition], pcmBytes[pcmPosition+1] = floatSamplesToBytes(audio.samples[0][samplePosition])
 			}
 			if audio.samples[1] != nil {
-				pcmPosition := (samplePosition*pcmSampleSetSize)+pcmSampleSize
+				pcmPosition := (samplePosition * pcmSampleSetSize) + pcmSampleSize
 				pcmBytes[pcmPosition], pcmBytes[pcmPosition+1] = floatSamplesToBytes(audio.samples[1][samplePosition])
 			}
 		}

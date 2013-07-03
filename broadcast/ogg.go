@@ -63,18 +63,18 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 			return
 		}
 
-		var packetOutResult = 1;
+		var packetOutResult = 1
 		for packetOutResult == 1 {
 			packetOutResult = decoder.oss.PacketOut(&decoder.op)
 			if packetOutResult == 1 {
-				if ! decoder.handler.PacketOut(&decoder.op) {
+				if !decoder.handler.PacketOut(&decoder.op) {
 					return
 				}
 			}
 		}
 
 		if packetOutResult < 0 {
-			fmt.Printf("PacketOutResult: %d\n", packetOutResult);
+			fmt.Printf("PacketOutResult: %d\n", packetOutResult)
 			// the second page of a Ogg stream seems to return a nice -1 ...
 			// 	return false
 		}
