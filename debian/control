@@ -1,0 +1,15 @@
+Source: go-broadcast
+Section: sound
+Priority: extra
+Maintainer: Alban Peignier <alban@tryphon.eu>
+Build-Depends: debhelper (>= 8.0.0), golang-go, libvorbis-dev, libasound2-dev, pkg-config, git-core
+Standards-Version: 3.9.4
+Homepage: http://projects.tryphon.eu/projects/go-broadcast
+#Vcs-Git: git://projects.tryphon.eu/go-broadcast
+#Vcs-Browser: http://projects.tryphon.eu/projects/go-broadcast/repository
+
+Package: go-broadcast
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Broadcast our audio content
+ Support HTTP streams for the moment
