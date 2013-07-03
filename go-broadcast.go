@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"net/url"
 	"os"
 	"time"
 
@@ -15,27 +13,18 @@ func main() {
 		fmt.Println("Usage: ", os.Args[0], "http://host:port/mount_point.ogg")
 		os.Exit(1)
 	}
-	url, err := url.Parse(os.Args[1])
+
+	httpInput := broadcast.HttpInput{Url: os.Args[1]}
+
+	err := httpInput.Init()
 	checkError(err)
 
-	client := &http.Client{}
-	request, err := http.NewRequest("GET", url.String(), nil)
-	checkError(err)
-
-	request.Header.Add("Cache-Control", "no-cache")
-	request.Header.Add("User-Agent", "Go Broadcast v0")
-
-	var (
-		oggDecoder    broadcast.OggDecoder
-		vorbisDecoder broadcast.VorbisDecoder
-		alsaSink      broadcast.AlsaSink
-	)
-
-	cache := true
+	alsaSink := broadcast.AlsaSink{}
 
 	err = alsaSink.Init()
 	checkError(err)
 
+	cache := true
 	if cache {
 		audioChannel := make(chan *broadcast.Audio, 1500)
 
@@ -47,42 +36,25 @@ func main() {
 			}
 		}()
 
-		vorbisDecoder.SetAudioHandler(broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+		httpInput.SetAudioHandler(broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
 			audioChannel <- audio
 		}))
 	} else {
-		vorbisDecoder.SetAudioHandler(&alsaSink)
+		httpInput.SetAudioHandler(&alsaSink)
 	}
 
 	go func() {
 		for {
-			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), vorbisDecoder.SampleCount()-alsaSink.SampleCount())
+			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), httpInput.SampleCount()-alsaSink.SampleCount())
 			time.Sleep(1 * time.Second)
 		}
 	}()
 
-	oggDecoder.SetHandler(&vorbisDecoder)
-
 	for {
-		fmt.Println("New HTTP request")
-		response, err := client.Do(request)
-		if err == nil && response.Status == "200 OK" {
-			reader := response.Body
+		err := httpInput.Read()
 
-			for oggDecoder.Read(reader) {
-			}
-
-			fmt.Println("End of HTTP stream")
-
-			oggDecoder.Reset()
-			vorbisDecoder.Reset()
-		} else {
-			if err != nil {
-				fmt.Println("Error ", err.Error())
-			} else {
-				fmt.Println(response.Status)
-			}
-
+		if err != nil {
+			fmt.Println("Error ", err.Error())
 			time.Sleep(5 * time.Second)
 		}
 	}
