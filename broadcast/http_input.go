@@ -68,7 +68,12 @@ func (input *HttpInput) Read() (err error) {
 		}
 	}
 
-	if ! input.oggDecoder.Read(input.response.Body) {
+	if input.oggDecoder.Read(input.response.Body) {
+		deadline := time.Now().Add(15 * time.Second)
+		if input.connection != nil {
+			input.connection.SetDeadline(deadline)
+		}
+	} else {
 		fmt.Println("End of HTTP stream")
 		input.Reset()
 	}
