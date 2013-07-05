@@ -32,6 +32,23 @@ func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
 	return connection, nil
 }
 
+func (input *HttpInput) checkRedirect(request *http.Request, via []*http.Request) error {
+	if len(via) >= 10 {
+		return errors.New("stopped after 5 redirects")
+	}
+
+	input.setRequestHeaders(request)
+
+	return nil
+}
+
+func (input *HttpInput) setRequestHeaders(request *http.Request) {
+	request.Header.Add("Cache-Control", "no-cache, must-revalidate")
+	request.Header.Add("Pragma", "no-cache")
+
+	request.Header.Add("User-Agent", "Go Broadcast v0")
+}
+
 func (input *HttpInput) Init() (err error) {
 	parsedUrl, err := url.Parse(input.Url)
 	if err != nil {
@@ -43,7 +60,8 @@ func (input *HttpInput) Init() (err error) {
 	}
 
 	input.client = http.Client{
-		Transport: &transport,
+		Transport:     &transport,
+		CheckRedirect: input.checkRedirect,
 	}
 
 	input.oggDecoder.SetHandler(&input.vorbisDecoder)
@@ -54,10 +72,7 @@ func (input *HttpInput) Init() (err error) {
 		return err
 	}
 
-	input.request.Header.Add("Cache-Control", "no-cache, must-revalidate")
-	input.request.Header.Add("Pragma", "no-cache")
-
-	input.request.Header.Add("User-Agent", "Go Broadcast v0")
+	input.setRequestHeaders(input.request)
 
 	return nil
 }
