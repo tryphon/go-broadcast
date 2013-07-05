@@ -113,3 +113,14 @@ func (input *HttpInput) SetAudioHandler(audioHandler AudioHandler) {
 func (input *HttpInput) SampleCount() int64 {
 	return input.vorbisDecoder.sampleCount
 }
+
+func (input *HttpInput) Run() {
+	for {
+		err := input.Read()
+
+		if err != nil {
+			fmt.Println("Error ", err.Error())
+			time.Sleep(5 * time.Second)
+		}
+	}
+}
