@@ -7,13 +7,13 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+	"io"
 )
 
 type HttpInput struct {
 	Url        string
-	request    *http.Request
 	client     http.Client
-	response   *http.Response
+	reader     io.ReadCloser
 	connection net.Conn
 
 	oggDecoder    OggDecoder
@@ -50,11 +50,6 @@ func (input *HttpInput) setRequestHeaders(request *http.Request) {
 }
 
 func (input *HttpInput) Init() (err error) {
-	parsedUrl, err := url.Parse(input.Url)
-	if err != nil {
-		return err
-	}
-
 	transport := http.Transport{
 		Dial: input.dialTimeout,
 	}
@@ -66,21 +61,25 @@ func (input *HttpInput) Init() (err error) {
 
 	input.oggDecoder.SetHandler(&input.vorbisDecoder)
 
-	input.request, err = http.NewRequest("GET", parsedUrl.String(), nil)
-
-	if err != nil {
-		return err
-	}
-
-	input.setRequestHeaders(input.request)
-
 	return nil
 }
 
 func (input *HttpInput) Read() (err error) {
-	if input.response == nil {
+	if input.reader == nil {
+		parsedUrl, err := url.Parse(input.Url)
+		if err != nil {
+			return err
+		}
+
+		request, err := http.NewRequest("GET", parsedUrl.String(), nil)
+		if err != nil {
+			return err
+		}
+
+		input.setRequestHeaders(request)
+
 		fmt.Println("New HTTP request")
-		response, err := input.client.Do(input.request)
+		response, err := input.client.Do(request)
 
 		if err == nil {
 			fmt.Println("HTTP Response : ", response.Status)
@@ -90,18 +89,15 @@ func (input *HttpInput) Read() (err error) {
 		}
 
 		if err != nil {
-			if input.response != nil {
-				input.response.Body.Close()
-			}
-			input.response = nil
 			return err
 		}
 
-		input.response = response
+		input.reader = response.Body
 	}
 
-	if input.oggDecoder.Read(input.response.Body) {
+	if input.oggDecoder.Read(input.reader) {
 		deadline := time.Now().Add(15 * time.Second)
+
 		if input.connection != nil {
 			input.connection.SetDeadline(deadline)
 		}
@@ -114,8 +110,10 @@ func (input *HttpInput) Read() (err error) {
 }
 
 func (input *HttpInput) Reset() {
-	input.response.Body.Close()
-	input.response = nil
+	if input.reader != nil {
+		input.reader.Close()
+		input.reader = nil
+	}
 
 	input.oggDecoder.Reset()
 	input.vorbisDecoder.Reset()
