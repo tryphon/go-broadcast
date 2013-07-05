@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -55,7 +56,12 @@ func (input *HttpInput) Read() (err error) {
 	if input.response == nil {
 		fmt.Println("New HTTP request")
 		response, err := input.client.Do(input.request)
-		if err == nil && response.Status == "200 OK" {
+
+		if response.Status != "200 OK" {
+			err = errors.New("HTTP Error")
+		}
+
+		if err == nil {
 			input.response = response
 		} else {
 			return err

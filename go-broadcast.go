@@ -26,29 +26,51 @@ func main() {
 
 	cache := true
 	if cache {
-		audioChannel := make(chan *broadcast.Audio, 1500)
+		audioBuffer := broadcast.NewAudioBuffer()
+		audioBuffer.MinSampleCount = 44100 * 5
+
+		fmt.Printf("AudioBuffer MinSampleCount : %d samples\n", audioBuffer.MinSampleCount)
 
 		go func() {
-			time.Sleep(10 * time.Second)
 			for {
-				audio := <-audioChannel
+				// fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), httpInput.SampleCount()-alsaSink.SampleCount())
+				// fmt.Printf("%v buffer SampleCount : %d\n", time.Now(), audioBuffer.Dump())
+				audioBuffer.Dump()
+				time.Sleep(1 * time.Second)
+			}
+		}()
+
+		go func() {
+			// time.Sleep(3 * time.Second)
+
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Println("Exception occured: ", err)
+				}
+			}()
+
+			var blankDuration uint32
+
+			for {
+				audio := audioBuffer.Read()
+				if audio == nil {
+					audio = broadcast.NewAudio()
+					blankDuration += uint32(audio.SampleCount())
+				} else {
+					if blankDuration > 0 {
+						fmt.Printf("%v Blank duration : %d samples\n", time.Now(), blankDuration)
+						blankDuration = 0
+					}
+				}
+
 				alsaSink.AudioOut(audio)
 			}
 		}()
 
-		httpInput.SetAudioHandler(broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
-			audioChannel <- audio
-		}))
+		httpInput.SetAudioHandler(audioBuffer)
 	} else {
 		httpInput.SetAudioHandler(&alsaSink)
 	}
-
-	go func() {
-		for {
-			fmt.Printf("%v vorbis / alsa sampleCount : %d\n", time.Now(), httpInput.SampleCount()-alsaSink.SampleCount())
-			time.Sleep(1 * time.Second)
-		}
-	}()
 
 	for {
 		err := httpInput.Read()

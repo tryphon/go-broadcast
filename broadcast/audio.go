@@ -20,6 +20,10 @@ type Audio struct {
 	sampleCount  int
 }
 
+func NewAudio() *Audio {
+	return &Audio{sampleCount: 1024, channelCount: 2}
+}
+
 func (audio *Audio) SampleCount() int {
 	return audio.sampleCount
 }
