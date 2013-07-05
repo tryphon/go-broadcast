@@ -36,8 +36,8 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 	result = false
 
 	defer func() {
-		if recover() != nil {
-			fmt.Println("Exception occured")
+		if err := recover(); err != nil {
+			fmt.Println("Exception occured: ", err)
 			result = false
 		}
 	}()
@@ -54,7 +54,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 	for decoder.oy.PageOut(&decoder.og) == 1 {
 		if decoder.oss.SerialNo != decoder.og.SerialNo() {
-			fmt.Printf("Init Ogg Stream State %d\n", decoder.og.SerialNo())
+			// fmt.Printf("Init Ogg Stream State %d\n", decoder.og.SerialNo())
 			decoder.oss.Init(decoder.og.SerialNo())
 
 			decoder.handler.NewStream(decoder.og.SerialNo())
