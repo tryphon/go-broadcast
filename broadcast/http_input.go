@@ -49,7 +49,17 @@ func (input *HttpInput) Init() (err error) {
 	input.oggDecoder.SetHandler(&input.vorbisDecoder)
 
 	input.request, err = http.NewRequest("GET", parsedUrl.String(), nil)
-	return err
+
+	if err != nil {
+		return err
+	}
+
+	input.request.Header.Add("Cache-Control", "no-cache, must-revalidate")
+	input.request.Header.Add("Pragma", "no-cache")
+
+	input.request.Header.Add("User-Agent", "Go Broadcast v0")
+
+	return nil
 }
 
 func (input *HttpInput) Read() (err error) {
@@ -57,15 +67,22 @@ func (input *HttpInput) Read() (err error) {
 		fmt.Println("New HTTP request")
 		response, err := input.client.Do(input.request)
 
-		if response.Status != "200 OK" {
-			err = errors.New("HTTP Error")
+		if err == nil {
+			fmt.Println("HTTP Response : ", response.Status)
+			if response.Status != "200 OK" {
+				err = errors.New("HTTP Error")
+			}
 		}
 
-		if err == nil {
-			input.response = response
-		} else {
+		if err != nil {
+			if input.response != nil {
+				input.response.Body.Close()
+			}
+			input.response = nil
 			return err
 		}
+
+		input.response = response
 	}
 
 	if input.oggDecoder.Read(input.response.Body) {
