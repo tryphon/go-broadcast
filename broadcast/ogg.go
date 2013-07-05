@@ -19,6 +19,8 @@ func (decoder *OggDecoder) Reset() {
 	decoder.oy.Reset()
 	decoder.oss.Reset()
 	decoder.og.Reset()
+
+	decoder.oss.SerialNo = 0
 }
 
 type OggHandler interface {
