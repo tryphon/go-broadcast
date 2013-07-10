@@ -89,6 +89,9 @@ func (input *HttpInput) Read() (err error) {
 		}
 
 		if err != nil {
+			if response != nil {
+				response.Body.Close()
+			}
 			return err
 		}
 
@@ -96,9 +99,8 @@ func (input *HttpInput) Read() (err error) {
 	}
 
 	if input.oggDecoder.Read(input.reader) {
-		deadline := time.Now().Add(15 * time.Second)
-
 		if input.connection != nil {
+			deadline := time.Now().Add(15 * time.Second)
 			input.connection.SetDeadline(deadline)
 		}
 	} else {
