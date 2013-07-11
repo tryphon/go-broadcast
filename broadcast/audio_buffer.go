@@ -19,6 +19,9 @@ type AudioBuffer struct {
 	MinSampleCount uint32
 	refill         bool
 
+	MaxSampleCount uint32
+	UnfillSampleCount uint32
+
 	full bool
 
 	mutex sync.Mutex
@@ -48,13 +51,25 @@ func (buffer *AudioBuffer) SampleCount() uint32 {
 	return buffer.sampleCount
 }
 
-func (buffer *AudioBuffer) AudioOut(audio *Audio) {
-	// buffer.Dump()
-
-	if buffer.full {
+func (buffer *AudioBuffer) unfill() {
+	if buffer.Full() {
 		// Buffer is full, moving reader to read oldest audio
 		buffer.Read()
 	}
+
+	if buffer.MaxSampleCount != 0 && buffer.UnfillSampleCount != 0 && buffer.sampleCount > buffer.MaxSampleCount {
+		initialSampleCount := buffer.sampleCount
+		for buffer.sampleCount > buffer.MaxSampleCount - buffer.UnfillSampleCount {
+			buffer.Read()
+		}
+		fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - buffer.sampleCount)
+	}
+}
+
+func (buffer *AudioBuffer) AudioOut(audio *Audio) {
+	// buffer.Dump()
+
+	buffer.unfill()
 
 	buffer.mutex.Lock()
 

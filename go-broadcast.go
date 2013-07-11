@@ -25,9 +25,11 @@ func main() {
 	checkError(err)
 
 	audioBuffer := broadcast.NewAudioBuffer()
-	audioBuffer.MinSampleCount = 44100 * 5
+	audioBuffer.MinSampleCount = 44100 * 2
+	audioBuffer.MaxSampleCount = 44100 * 4
+	audioBuffer.UnfillSampleCount = 44100 * 2
 
-	fmt.Printf("AudioBuffer MinSampleCount : %d samples\n", audioBuffer.MinSampleCount)
+	fmt.Printf("AudioBuffer MinSampleCount : %d, MaxSampleCount: %d, UnfillSampleCount: %d samples\n", audioBuffer.MinSampleCount, audioBuffer.MaxSampleCount, audioBuffer.UnfillSampleCount)
 
 	httpInput.SetAudioHandler(audioBuffer)
 
