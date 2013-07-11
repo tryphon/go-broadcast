@@ -21,13 +21,14 @@ type HttpInput struct {
 }
 
 func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
-	connection, err := net.DialTimeout(network, addr, 10*time.Second)
+	connection, err := net.DialTimeout(network, addr, 5*time.Second)
 	if err != nil {
 		input.connection = nil
 		return nil, err
 	}
 
 	input.connection = connection
+	input.updateDeadline()
 
 	return connection, nil
 }
@@ -40,6 +41,12 @@ func (input *HttpInput) checkRedirect(request *http.Request, via []*http.Request
 	input.setRequestHeaders(request)
 
 	return nil
+}
+
+func (input *HttpInput) updateDeadline() {
+	if input.connection != nil {
+		input.connection.SetDeadline(time.Now().Add(10 * time.Second))
+	}
 }
 
 func (input *HttpInput) setRequestHeaders(request *http.Request) {
@@ -99,10 +106,7 @@ func (input *HttpInput) Read() (err error) {
 	}
 
 	if input.oggDecoder.Read(input.reader) {
-		if input.connection != nil {
-			deadline := time.Now().Add(15 * time.Second)
-			input.connection.SetDeadline(deadline)
-		}
+		input.updateDeadline()
 	} else {
 		fmt.Println("End of HTTP stream")
 		input.Reset()
