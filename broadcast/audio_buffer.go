@@ -1,112 +1,111 @@
 package broadcast
 
-import (
-	"fmt"
-	"sync"
-	"time"
-)
-
-const maxAudioBufferSize uint32 = 4096
-
-type AudioBuffer struct {
-	audios [maxAudioBufferSize]*Audio
-
-	sampleCount uint32
-
-	nextFreeIndex uint32
-	readIndex     uint32
-
-	MinSampleCount uint32
-	refill         bool
-
-	MaxSampleCount uint32
-	UnfillSampleCount uint32
-
-	full bool
-
-	mutex sync.Mutex
+type AudioBuffer interface {
+	AudioOut(audio *Audio)
+	Read() *Audio
+	SampleCount() uint32
 }
 
-func NewAudioBuffer() *AudioBuffer {
-	return &AudioBuffer{refill: true}
-}
+// const maxAudioBufferSize uint32 = 4096
 
-func (buffer *AudioBuffer) Empty() bool {
-	return !buffer.full && buffer.nextFreeIndex == buffer.readIndex
-}
+// type AudioBuffer struct {
+// 	audios [maxAudioBufferSize]*Audio
 
-func (buffer *AudioBuffer) Full() bool {
-	return buffer.full
-}
+// 	sampleCount uint32
 
-func (buffer *AudioBuffer) Refill() bool {
-	if buffer.refill && buffer.sampleCount > buffer.MinSampleCount {
-		buffer.refill = false
-	}
+// 	nextFreeIndex uint32
+// 	readIndex     uint32
 
-	return buffer.refill
-}
+// 	MinSampleCount uint32
+// 	refill         bool
 
-func (buffer *AudioBuffer) SampleCount() uint32 {
-	return buffer.sampleCount
-}
+// 	MaxSampleCount uint32
+// 	UnfillSampleCount uint32
 
-func (buffer *AudioBuffer) unfill() {
-	if buffer.Full() {
-		// Buffer is full, moving reader to read oldest audio
-		buffer.Read()
-	}
+// 	full bool
 
-	if buffer.MaxSampleCount != 0 && buffer.UnfillSampleCount != 0 && buffer.sampleCount > buffer.MaxSampleCount {
-		initialSampleCount := buffer.sampleCount
-		for buffer.sampleCount > buffer.MaxSampleCount - buffer.UnfillSampleCount {
-			buffer.Read()
-		}
-		fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - buffer.sampleCount)
-	}
-}
+// 	mutex sync.Mutex
+// }
 
-func (buffer *AudioBuffer) AudioOut(audio *Audio) {
-	// buffer.Dump()
+// func NewAudioBuffer() *AudioBuffer {
+// 	return &AudioBuffer{refill: true}
+// }
 
-	buffer.unfill()
+// func (buffer *AudioBuffer) Empty() bool {
+// 	return !buffer.full && buffer.nextFreeIndex == buffer.readIndex
+// }
 
-	buffer.mutex.Lock()
+// func (buffer *AudioBuffer) Full() bool {
+// 	return buffer.full
+// }
 
-	buffer.audios[buffer.nextFreeIndex] = audio
-	buffer.sampleCount += uint32(audio.SampleCount())
+// func (buffer *AudioBuffer) Refill() bool {
+// 	if buffer.refill && buffer.sampleCount > buffer.MinSampleCount {
+// 		buffer.refill = false
+// 	}
 
-	buffer.nextFreeIndex = (buffer.nextFreeIndex + 1) % maxAudioBufferSize
-	buffer.full = (buffer.nextFreeIndex == buffer.readIndex)
+// 	return buffer.refill
+// }
 
-	buffer.mutex.Unlock()
-}
+// func (buffer *AudioBuffer) SampleCount() uint32 {
+// 	return buffer.sampleCount
+// }
 
-func (buffer *AudioBuffer) Read() (audio *Audio) {
-	// buffer.Dump()
+// func (buffer *AudioBuffer) unfill() {
+// 	if buffer.Full() {
+// 		// Buffer is full, moving reader to read oldest audio
+// 		buffer.Read()
+// 	}
 
-	buffer.mutex.Lock()
-	defer buffer.mutex.Unlock()
+// 	if buffer.MaxSampleCount != 0 && buffer.UnfillSampleCount != 0 && buffer.sampleCount > buffer.MaxSampleCount {
+// 		initialSampleCount := buffer.sampleCount
+// 		for buffer.sampleCount > buffer.MaxSampleCount - buffer.UnfillSampleCount {
+// 			buffer.Read()
+// 		}
+// 		fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - buffer.sampleCount)
+// 	}
+// }
 
-	if buffer.Empty() {
-		buffer.refill = true
-		return nil
-	}
+// func (buffer *AudioBuffer) AudioOut(audio *Audio) {
+// 	// buffer.Dump()
 
-	if buffer.Refill() {
-		return nil
-	}
+// 	buffer.unfill()
 
-	audio = buffer.audios[buffer.readIndex]
-	buffer.sampleCount -= uint32(audio.SampleCount())
-	buffer.audios[buffer.readIndex] = nil
+// 	buffer.mutex.Lock()
+// 	defer buffer.mutex.Unlock()
 
-	buffer.readIndex = (buffer.readIndex + 1) % maxAudioBufferSize
-	buffer.full = false
+// 	buffer.audios[buffer.nextFreeIndex] = audio
+// 	buffer.sampleCount += uint32(audio.SampleCount())
 
-	return
-}
+// 	buffer.nextFreeIndex = (buffer.nextFreeIndex + 1) % maxAudioBufferSize
+// 	buffer.full = (buffer.nextFreeIndex == buffer.readIndex)
+// }
 
-func (buffer *AudioBuffer) Dump() {
-	fmt.Printf("%v SampleCount: %d, NextFreeIndex: %d, ReadIndex: %d, Full: %v, Refill: %v\n", time.Now(), buffer.sampleCount, buffer.nextFreeIndex, buffer.readIndex, buffer.full, buffer.Refill())
-}
+// func (buffer *AudioBuffer) Read() (audio *Audio) {
+// 	// buffer.Dump()
+
+// 	buffer.mutex.Lock()
+// 	defer buffer.mutex.Unlock()
+
+// 	if buffer.Empty() {
+// 		buffer.refill = true
+// 		return nil
+// 	}
+
+// 	if buffer.Refill() {
+// 		return nil
+// 	}
+
+// 	audio = buffer.audios[buffer.readIndex]
+// 	buffer.sampleCount -= uint32(audio.SampleCount())
+// 	buffer.audios[buffer.readIndex] = nil
+
+// 	buffer.readIndex = (buffer.readIndex + 1) % maxAudioBufferSize
+// 	buffer.full = false
+
+// 	return
+// }
+
+// func (buffer *AudioBuffer) Dump() {
+// 	fmt.Printf("%v SampleCount: %d, NextFreeIndex: %d, ReadIndex: %d, Full: %v, Refill: %v\n", time.Now(), buffer.sampleCount, buffer.nextFreeIndex, buffer.readIndex, buffer.full, buffer.Refill())
+// }

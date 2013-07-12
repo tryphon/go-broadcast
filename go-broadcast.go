@@ -24,19 +24,25 @@ func main() {
 	err = alsaSink.Init()
 	checkError(err)
 
-	audioBuffer := broadcast.NewAudioBuffer()
-	audioBuffer.MinSampleCount = 44100 * 2
-	audioBuffer.MaxSampleCount = 44100 * 4
-	audioBuffer.UnfillSampleCount = 44100 * 2
+	audioBuffer := &broadcast.MutexAudioBuffer {
+		Buffer: &broadcast.UnfillAudioBuffer {
+			Buffer: &broadcast.RefillAudioBuffer {
+				Buffer: &broadcast.MemoryAudioBuffer{},
+				MinSampleCount: 44100*5,
+			},
+			MaxSampleCount: 44100*10,
+			UnfillSampleCount: 44100*2,
+		},
+	}
 
-	fmt.Printf("AudioBuffer MinSampleCount : %d, MaxSampleCount: %d, UnfillSampleCount: %d samples\n", audioBuffer.MinSampleCount, audioBuffer.MaxSampleCount, audioBuffer.UnfillSampleCount)
+	// fmt.Printf("AudioBuffer MinSampleCount : %d, MaxSampleCount: %d, UnfillSampleCount: %d samples\n", audioBuffer.MinSampleCount, audioBuffer.MaxSampleCount, audioBuffer.UnfillSampleCount)
 
 	httpInput.SetAudioHandler(audioBuffer)
 
 	go func() {
 		for {
 			time.Sleep(1 * time.Second)
-			audioBuffer.Dump()
+			fmt.Printf("%v SampleCount: %d\n", time.Now(), audioBuffer.SampleCount())
 		}
 	}()
 

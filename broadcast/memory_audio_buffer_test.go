@@ -5,21 +5,21 @@ import (
 )
 
 func TestAudioBuffer_NewAudioBuffer_default(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	if audioBuffer == nil {
 		t.Errorf("Should return an AudioBuffer")
 	}
 }
 
 func TestAudioBuffer_NewAudioBuffer_empty(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	if !audioBuffer.Empty() {
 		t.Errorf("Should return an empty AudioBuffer")
 	}
 }
 
 func TestAudioBuffer_AudioOut_sampleCount(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	audioBuffer.AudioOut(audio)
@@ -29,7 +29,7 @@ func TestAudioBuffer_AudioOut_sampleCount(t *testing.T) {
 }
 
 func TestAudioBuffer_AudioOut_nextFreeIndex(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	audioBuffer.AudioOut(audio)
@@ -39,7 +39,7 @@ func TestAudioBuffer_AudioOut_nextFreeIndex(t *testing.T) {
 }
 
 func TestAudioBuffer_AudioOut_nextFreeIndexLoop(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	for time := 0; uint32(time) < maxAudioBufferSize; time++ {
@@ -52,7 +52,7 @@ func TestAudioBuffer_AudioOut_nextFreeIndexLoop(t *testing.T) {
 }
 
 func TestAudioBuffer_AudioOut_moveReader(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	for time := 0; uint32(time) < maxAudioBufferSize+1; time++ {
@@ -65,7 +65,7 @@ func TestAudioBuffer_AudioOut_moveReader(t *testing.T) {
 }
 
 func TestAudioBuffer_Read_return(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	audioBuffer.AudioOut(audio)
@@ -77,7 +77,7 @@ func TestAudioBuffer_Read_return(t *testing.T) {
 }
 
 func TestAudioBuffer_Read_SampleCount(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	audioBuffer.AudioOut(audio)
@@ -89,7 +89,7 @@ func TestAudioBuffer_Read_SampleCount(t *testing.T) {
 }
 
 func TestAudioBuffer_Read_readIndex(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	audioBuffer.AudioOut(audio)
@@ -101,7 +101,7 @@ func TestAudioBuffer_Read_readIndex(t *testing.T) {
 }
 
 func TestAudioBuffer_Read_readIndexLoop(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	for time := 0; uint32(time) < maxAudioBufferSize; time++ {
@@ -115,7 +115,7 @@ func TestAudioBuffer_Read_readIndexLoop(t *testing.T) {
 }
 
 func TestAudioBuffer_Read_empty(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 
 	audio := &Audio{sampleCount: 1024}
 
@@ -128,7 +128,7 @@ func TestAudioBuffer_Read_empty(t *testing.T) {
 }
 
 func TestAudioBuffer_Full(t *testing.T) {
-	audioBuffer := NewAudioBuffer()
+	audioBuffer := &MemoryAudioBuffer{}
 	audio := &Audio{sampleCount: 1024}
 
 	for time := 0; uint32(time) < maxAudioBufferSize; time++ {
