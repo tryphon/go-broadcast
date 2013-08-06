@@ -26,9 +26,17 @@ func main() {
 
 	audioBuffer := &broadcast.MutexAudioBuffer {
 		Buffer: &broadcast.UnfillAudioBuffer {
-			Buffer: &broadcast.RefillAudioBuffer {
-				Buffer: &broadcast.MemoryAudioBuffer{},
-				MinSampleCount: 44100*5,
+			Buffer: &broadcast.AdjustAudioBuffer {
+				Buffer: &broadcast.RefillAudioBuffer {
+					Buffer: &broadcast.AdjustAudioBuffer {
+						Buffer: &broadcast.MemoryAudioBuffer{},
+						LimitSampleCount: 0,
+						ThresholdSampleCount: 44100*3,
+					},
+					MinSampleCount: 44100*5,
+				},
+				LimitSampleCount: 44100*10,
+				ThresholdSampleCount: 44100*7,
 			},
 			MaxSampleCount: 44100*10,
 			UnfillSampleCount: 44100*2,
