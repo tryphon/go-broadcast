@@ -35,16 +35,16 @@ func (alsa *AlsaSink) AudioOut(audio *Audio) {
 	}
 
 	wroteSamples := int64(alsaWriteLength / len(pcmBytes) * audio.sampleCount)
-	// fmt.Printf("wrote %d samples in alsa\n", wroteSamples)
+	// Log.Debugf("wrote %d samples in alsa\n", wroteSamples)
 	alsa.sampleCount += wroteSamples
 
 	if alsaWriteLength != len(pcmBytes) {
 		fmt.Fprintf(os.Stderr, "Did not write whole alsa buffer (Wrote %v, expected %v)\n", alsaWriteLength, len(pcmBytes))
 	}
 
-	// fmt.Printf("%v alsa sampleCount : %d\n", time.Now(), alsa.sampleCount)
+	// Log.Debugf("%v alsa sampleCount : %d\n", time.Now(), alsa.sampleCount)
 
-	// fmt.Printf("wrote %d bytes in alsa\n", alsaWriteLength)
+	// Log.Debugf("wrote %d bytes in alsa\n", alsaWriteLength)
 }
 
 func (alsa *AlsaSink) SampleCount() int64 {

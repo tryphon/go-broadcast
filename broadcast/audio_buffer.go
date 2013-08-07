@@ -62,7 +62,7 @@ type AudioBuffer interface {
 // 		for buffer.sampleCount > buffer.MaxSampleCount - buffer.UnfillSampleCount {
 // 			buffer.Read()
 // 		}
-// 		fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - buffer.sampleCount)
+// 		Log.Debugf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - buffer.sampleCount)
 // 	}
 // }
 
@@ -107,5 +107,5 @@ type AudioBuffer interface {
 // }
 
 // func (buffer *AudioBuffer) Dump() {
-// 	fmt.Printf("%v SampleCount: %d, NextFreeIndex: %d, ReadIndex: %d, Full: %v, Refill: %v\n", time.Now(), buffer.sampleCount, buffer.nextFreeIndex, buffer.readIndex, buffer.full, buffer.Refill())
+// 	Log.Debugf("%v SampleCount: %d, NextFreeIndex: %d, ReadIndex: %d, Full: %v, Refill: %v\n", time.Now(), buffer.sampleCount, buffer.nextFreeIndex, buffer.readIndex, buffer.full, buffer.Refill())
 // }

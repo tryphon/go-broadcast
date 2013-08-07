@@ -2,7 +2,6 @@ package broadcast
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -88,11 +87,11 @@ func (input *HttpInput) Read() (err error) {
 
 		input.setRequestHeaders(request)
 
-		fmt.Println("New HTTP request")
+		Log.Printf("New HTTP request (%s)", parsedUrl.String())
 		response, err := input.client.Do(request)
 
 		if err == nil {
-			fmt.Println("HTTP Response : ", response.Status)
+			Log.Debugf("HTTP Response : %s", response.Status)
 			if response.Status != "200 OK" {
 				err = errors.New("HTTP Error")
 			}
@@ -111,7 +110,7 @@ func (input *HttpInput) Read() (err error) {
 	if input.oggDecoder.Read(input.reader) {
 		input.updateDeadline()
 	} else {
-		fmt.Println("End of HTTP stream")
+		Log.Printf("End of HTTP stream")
 		input.Reset()
 	}
 
@@ -141,7 +140,7 @@ func (input *HttpInput) Run() {
 		err := input.Read()
 
 		if err != nil {
-			fmt.Println("Error ", err.Error())
+			Log.Printf("HTTP Error : %s", err.Error())
 			time.Sleep(input.GetWaitOnError())
 		}
 	}

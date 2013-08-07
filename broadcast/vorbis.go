@@ -1,7 +1,6 @@
 package broadcast
 
 import (
-	"fmt"
 	"github.com/grd/ogg"
 	"github.com/grd/vorbis"
 )
@@ -47,21 +46,20 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 
 	switch decoder.streamStatus {
 	case "vorbis_init_info", "vorbis_init_comments", "vorbis_init_codebooks":
-		fmt.Printf("Init vorbis header %s.\n", decoder.streamStatus)
+		Log.Debugf("Init vorbis header %s.\n", decoder.streamStatus)
 
 		if vorbis.SynthesisHeaderIn(&decoder.vi, &decoder.vc, packet) < 0 {
-			// TODO we should close ogg and reader to retry
-			fmt.Printf("This Ogg bitstream does not contain Vorbis audio data.\n")
+			Log.Printf("This Ogg bitstream does not contain Vorbis audio data.\n")
 			return false
 		}
 
 		switch decoder.streamStatus {
 		case "vorbis_init_info":
-			fmt.Printf("Bitstream is %d channel, %dHz\n", decoder.vi.Channels(), decoder.vi.Rate())
+			Log.Debugf("Bitstream is %d channel, %dHz\n", decoder.vi.Channels(), decoder.vi.Rate())
 			decoder.streamStatus = "vorbis_init_comments"
 		case "vorbis_init_comments":
-			fmt.Printf("comments: %v\n", decoder.vc.UserComments())
-			fmt.Printf("vendor: %v\n", decoder.vc.Vendor())
+			Log.Debugf("comments: %v\n", decoder.vc.UserComments())
+			Log.Debugf("vendor: %v\n", decoder.vc.Vendor())
 			decoder.streamStatus = "vorbis_init_codebooks"
 		case "vorbis_init_codebooks":
 			if vorbis.SynthesisInit(&decoder.vd, &decoder.vi) == 0 {
@@ -83,12 +81,12 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 				decoder.sampleCount += int64(samples)
 
 				if packet.GranulePos > -1 {
-					// fmt.Printf("sampleCount: %d\n", decoder.sampleCount)
-					// fmt.Printf("granule pos: %d\n", packet.GranulePos)
-					// fmt.Printf("%v vorbis sampleCount : %d\n", time.Now(), decoder.sampleCount)
+					// Log.Debugf("sampleCount: %d\n", decoder.sampleCount)
+					// Log.Debugf("granule pos: %d\n", packet.GranulePos)
+					// Log.Debugf("%v vorbis sampleCount : %d\n", time.Now(), decoder.sampleCount)
 				}
 
-				// fmt.Printf("read %d samples\n", samples)
+				// Log.Debugf("read %d samples\n", samples)
 				if decoder.audioHandler != nil {
 					audio := new(Audio)
 					audio.LoadPcmArray(&rawFloatBuffer, samples, 2)

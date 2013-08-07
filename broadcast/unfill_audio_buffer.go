@@ -1,7 +1,6 @@
 package broadcast
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -25,7 +24,7 @@ func (pseudoBuffer *UnfillAudioBuffer) unfill() {
 	for pseudoBuffer.Buffer.SampleCount() > targetSampleCount {
 		pseudoBuffer.Buffer.Read()
 	}
-	fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount-pseudoBuffer.Buffer.SampleCount())
+	Log.Debugf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount-pseudoBuffer.Buffer.SampleCount())
 }
 
 func (pseudoBuffer *UnfillAudioBuffer) AudioOut(audio *Audio) {

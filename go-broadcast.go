@@ -74,8 +74,8 @@ func main() {
 		},
 	}
 
-	fmt.Printf("AudioBuffer low-adjust-limit %d, low-adjust-threshold %d, low-refill %d\n", lowAdjustLimitSampleCount, lowAdjustThresholdSampleCount, lowRefillMinSampleCount)
-	fmt.Printf("AudioBuffer high-adjust-threshold %d, high-adjust-limit %d, high-max %d, high-unfill %d\n", highAdjustLimitSampleCount, highAdjustThresholdSampleCount, highUnfillMaxSampleCount, highUnfillSampleCount)
+	broadcast.Log.Debugf("AudioBuffer low-adjust-limit %d, low-adjust-threshold %d, low-refill %d", lowAdjustLimitSampleCount, lowAdjustThresholdSampleCount, lowRefillMinSampleCount)
+	broadcast.Log.Debugf("AudioBuffer high-adjust-threshold %d, high-adjust-limit %d, high-max %d, high-unfill %d", highAdjustLimitSampleCount, highAdjustThresholdSampleCount, highUnfillMaxSampleCount, highUnfillSampleCount)
 
 	httpInput.SetAudioHandler(audioBuffer)
 
@@ -83,7 +83,7 @@ func main() {
 		go func() {
 			for {
 				time.Sleep(statusLoop)
-				fmt.Printf("%v SampleCount: %d\n", time.Now(), audioBuffer.SampleCount())
+				broadcast.Log.Debugf("SampleCount: %d", audioBuffer.SampleCount())
 			}
 		}()
 	}
@@ -99,7 +99,7 @@ func main() {
 			blankDuration += uint32(audio.SampleCount())
 		} else {
 			if blankDuration > 0 {
-				fmt.Printf("%v Blank duration : %d samples\n", time.Now(), blankDuration)
+				broadcast.Log.Printf("Blank duration : %d samples", blankDuration)
 				blankDuration = 0
 			}
 		}
@@ -111,6 +111,7 @@ func main() {
 func checkError(err error) {
 	if err != nil {
 		fmt.Println("Fatal error ", err.Error())
+		broadcast.Log.Printf("Fatal error : %s", err.Error())
 		os.Exit(1)
 	}
 }

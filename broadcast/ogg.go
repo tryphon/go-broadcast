@@ -1,7 +1,6 @@
 package broadcast
 
 import (
-	"fmt"
 	"github.com/grd/ogg"
 	"io"
 )
@@ -37,7 +36,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			fmt.Println("Exception occured: ", err)
+			Log.Printf("Exception occured in Ogg/Vorbis decoder : %s", err)
 			result = false
 		}
 	}()
@@ -54,7 +53,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 	for decoder.oy.PageOut(&decoder.og) == 1 {
 		if decoder.oss.SerialNo != decoder.og.SerialNo() {
-			// fmt.Printf("Init Ogg Stream State %d\n", decoder.og.SerialNo())
+			// Log.Debugf("Init Ogg Stream State %d", decoder.og.SerialNo())
 			decoder.oss.Init(decoder.og.SerialNo())
 
 			decoder.handler.NewStream(decoder.og.SerialNo())
@@ -76,7 +75,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 		}
 
 		if packetOutResult < 0 {
-			fmt.Printf("PacketOutResult: %d\n", packetOutResult)
+			Log.Debugf("PacketOutResult: %d\n", packetOutResult)
 			// the second page of a Ogg stream seems to return a nice -1 ...
 			// 	return false
 		}

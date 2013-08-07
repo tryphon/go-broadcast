@@ -1,10 +1,8 @@
 package broadcast
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
-	"time"
 )
 
 type AdjustAudioBuffer struct {
@@ -23,7 +21,7 @@ func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
 
 	rawRate := (float64(sampleCount) - float64(pseudoBuffer.ThresholdSampleCount)) / (float64(pseudoBuffer.LimitSampleCount) - float64(pseudoBuffer.ThresholdSampleCount))
 
-	// fmt.Printf("SampleCount : %d, ThresholdSampleCount: %d, LimitSampleCount: %d, RawRate: %f\n", sampleCount, pseudoBuffer.ThresholdSampleCount, pseudoBuffer.LimitSampleCount, rawRate)
+	// Log.Debugf("SampleCount : %d, ThresholdSampleCount: %d, LimitSampleCount: %d, RawRate: %f\n", sampleCount, pseudoBuffer.ThresholdSampleCount, pseudoBuffer.LimitSampleCount, rawRate)
 	return math.Min(1, math.Max(0, rawRate))
 }
 
@@ -60,14 +58,14 @@ func (pseudoBuffer *AdjustAudioBuffer) adjust() bool {
 
 	result := value > probability
 	if result {
-		fmt.Printf("Fill Rate : %f, Value: %f, Probability: %f\n", pseudoBuffer.fillRate(), value, probability)
+		Log.Debugf("Fill Rate : %f, Value: %f, Probability: %f", pseudoBuffer.fillRate(), value, probability)
 	}
 	return result
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) logAdjustment(audio *Audio) *Audio {
 	if audio != nil {
-		fmt.Printf("%v Adjustment : %d samples\n", time.Now(), pseudoBuffer.adjustmentFactor()*audio.SampleCount())
+		Log.Printf("Adjustment : %d samples\n", pseudoBuffer.adjustmentFactor()*audio.SampleCount())
 	}
 	return audio
 }
