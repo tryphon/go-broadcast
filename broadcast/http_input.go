@@ -10,7 +10,10 @@ import (
 )
 
 type HttpInput struct {
-	Url        string
+	Url      string
+	Username string
+	Password string
+
 	client     http.Client
 	reader     io.ReadCloser
 	connection net.Conn
@@ -86,6 +89,11 @@ func (input *HttpInput) Read() (err error) {
 		}
 
 		input.setRequestHeaders(request)
+
+		if input.Username != "" || input.Password != "" {
+			Log.Debugf("Use basic auth : %s/[PASSWORD]", input.Username)
+			request.SetBasicAuth(input.Username, input.Password)
+		}
 
 		Log.Printf("New HTTP request (%s)", parsedUrl.String())
 		response, err := input.client.Do(request)
