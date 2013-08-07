@@ -4,18 +4,41 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"flag"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Println("Usage: ", os.Args[0], "http://host:port/mount_point.ogg")
-		os.Exit(1)
+	var sampleRate uint = 44100
+
+	var lowAdjustLimit, lowAdjustThreshold, lowRefillMin, highAdjustLimit, highAdjustThreshold, highUnfillMax, highUnfill float64
+	var statusLoop, httpReadTimeout, httpWaitOnError time.Duration
+
+	flag.Float64Var(&lowAdjustLimit, "low-adjust-limit", 0, "Limit of low adjust buffer (in seconds)")
+	flag.Float64Var(&lowAdjustThreshold, "low-adjust-threshold", 3, "Limit of low adjust buffer (in seconds)")
+	flag.Float64Var(&lowRefillMin, "low-refill", 3, "Duration to refill when buffer is empty (in seconds)")
+	flag.Float64Var(&highAdjustThreshold, "high-adjust-threshold", 7, "Limit of high adjust buffer (in seconds)")
+	flag.Float64Var(&highAdjustLimit, "high-adjust-limit", 10, "Limit of high adjust buffer (in seconds)")
+	flag.Float64Var(&highUnfillMax, "high-max", 10, "Max duration of buffer (in seconds)")
+	flag.Float64Var(&highUnfill, "high-unfill", 3, "Duration to unfill when buffer is full (in seconds)")
+	flag.DurationVar(&statusLoop, "status-loop", 0, "Duration between two status dump (0 to disable)")
+	flag.DurationVar(&httpReadTimeout, "http-read-timeout", 10 * time.Second, "Read timeout before creating a new http connection")
+	flag.DurationVar(&httpWaitOnError, "http-wait-on-error", 5 * time.Second, "Delay after http error")
+
+	flag.Usage = func() {
+    fmt.Fprintf(os.Stderr, "Usage: %s [options] <url>\n", os.Args[0])
+    flag.PrintDefaults()
 	}
 
-	httpInput := broadcast.HttpInput{Url: os.Args[1]}
+	flag.Parse()
 
+	if flag.NArg() != 1 {
+		flag.Usage()
+	 	os.Exit(1)
+	}
+
+	httpInput := broadcast.HttpInput{Url: flag.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError}
 	err := httpInput.Init()
 	checkError(err)
 
@@ -24,35 +47,46 @@ func main() {
 	err = alsaSink.Init()
 	checkError(err)
 
+	lowAdjustLimitSampleCount := uint32(lowAdjustLimit * float64(sampleRate))
+	lowAdjustThresholdSampleCount := uint32(lowAdjustThreshold * float64(sampleRate))
+	lowRefillMinSampleCount := uint32(lowRefillMin * float64(sampleRate))
+	highAdjustLimitSampleCount := uint32(highAdjustLimit * float64(sampleRate))
+	highAdjustThresholdSampleCount := uint32(highAdjustThreshold * float64(sampleRate))
+	highUnfillMaxSampleCount := uint32(highUnfillMax * float64(sampleRate))
+	highUnfillSampleCount := uint32(highUnfill * float64(sampleRate))
+
 	audioBuffer := &broadcast.MutexAudioBuffer {
 		Buffer: &broadcast.UnfillAudioBuffer {
 			Buffer: &broadcast.AdjustAudioBuffer {
 				Buffer: &broadcast.RefillAudioBuffer {
 					Buffer: &broadcast.AdjustAudioBuffer {
 						Buffer: &broadcast.MemoryAudioBuffer{},
-						LimitSampleCount: 0,
-						ThresholdSampleCount: 44100*3,
+						LimitSampleCount: lowAdjustLimitSampleCount,
+						ThresholdSampleCount: lowAdjustThresholdSampleCount,
 					},
-					MinSampleCount: 44100*5,
+					MinSampleCount: lowRefillMinSampleCount,
 				},
-				LimitSampleCount: 44100*10,
-				ThresholdSampleCount: 44100*7,
+				LimitSampleCount: highAdjustLimitSampleCount,
+				ThresholdSampleCount: highAdjustThresholdSampleCount,
 			},
-			MaxSampleCount: 44100*10,
-			UnfillSampleCount: 44100*2,
+			MaxSampleCount: highUnfillMaxSampleCount,
+			UnfillSampleCount: highUnfillSampleCount,
 		},
 	}
 
-	// fmt.Printf("AudioBuffer MinSampleCount : %d, MaxSampleCount: %d, UnfillSampleCount: %d samples\n", audioBuffer.MinSampleCount, audioBuffer.MaxSampleCount, audioBuffer.UnfillSampleCount)
+	fmt.Printf("AudioBuffer low-adjust-limit %d, low-adjust-threshold %d, low-refill %d\n", lowAdjustLimitSampleCount, lowAdjustThresholdSampleCount, lowRefillMinSampleCount)
+	fmt.Printf("AudioBuffer high-adjust-threshold %d, high-adjust-limit %d, high-max %d, high-unfill %d\n", highAdjustLimitSampleCount, highAdjustThresholdSampleCount, highUnfillMaxSampleCount, highUnfillSampleCount)
 
 	httpInput.SetAudioHandler(audioBuffer)
 
-	go func() {
-		for {
-			time.Sleep(1 * time.Second)
-			fmt.Printf("%v SampleCount: %d\n", time.Now(), audioBuffer.SampleCount())
-		}
-	}()
+	if statusLoop > 0 {
+		go func() {
+			for {
+				time.Sleep(statusLoop)
+				fmt.Printf("%v SampleCount: %d\n", time.Now(), audioBuffer.SampleCount())
+			}
+		}()
+	}
 
 	go httpInput.Run()
 

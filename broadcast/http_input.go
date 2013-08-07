@@ -18,10 +18,13 @@ type HttpInput struct {
 
 	oggDecoder    OggDecoder
 	vorbisDecoder VorbisDecoder
+
+	ReadTimeout   time.Duration
+	WaitOnError   time.Duration
 }
 
 func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
-	connection, err := net.DialTimeout(network, addr, 5*time.Second)
+	connection, err := net.DialTimeout(network, addr, input.GetReadTimeout())
 	if err != nil {
 		input.connection = nil
 		return nil, err
@@ -35,7 +38,7 @@ func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
 
 func (input *HttpInput) checkRedirect(request *http.Request, via []*http.Request) error {
 	if len(via) >= 10 {
-		return errors.New("stopped after 5 redirects")
+		return errors.New("stopped after 10 redirects")
 	}
 
 	input.setRequestHeaders(request)
@@ -45,7 +48,7 @@ func (input *HttpInput) checkRedirect(request *http.Request, via []*http.Request
 
 func (input *HttpInput) updateDeadline() {
 	if input.connection != nil {
-		input.connection.SetDeadline(time.Now().Add(10 * time.Second))
+		input.connection.SetDeadline(time.Now().Add(input.GetReadTimeout()))
 	}
 }
 
@@ -139,7 +142,21 @@ func (input *HttpInput) Run() {
 
 		if err != nil {
 			fmt.Println("Error ", err.Error())
-			time.Sleep(5 * time.Second)
+			time.Sleep(input.GetWaitOnError())
 		}
 	}
+}
+
+func (input *HttpInput) GetWaitOnError() time.Duration {
+	if input.WaitOnError == 0 {
+		input.WaitOnError = 5 * time.Second
+	}
+	return input.WaitOnError;
+}
+
+func (input *HttpInput) GetReadTimeout() time.Duration {
+	if input.ReadTimeout == 0 {
+		input.ReadTimeout = 10 * time.Second
+	}
+	return input.ReadTimeout;
 }
