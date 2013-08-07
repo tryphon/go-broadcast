@@ -60,7 +60,7 @@ func TestUnfillAudioBuffer_full(t *testing.T) {
 	unfillAudioBuffer.MaxSampleCount = 1
 	unfillAudioBuffer.UnfillSampleCount = 1
 
-	if ! unfillAudioBuffer.full() {
+	if !unfillAudioBuffer.full() {
 		t.Errorf("Should be full when buffer SampleCount() > MaxSampleCount")
 	}
 
@@ -104,7 +104,7 @@ func TestUnfillAudioBuffer_AudioOut_WhenFull(t *testing.T) {
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
 	audio := NewAudio()
 
-	unfillAudioBuffer.MaxSampleCount = uint32(audio.SampleCount() * 3) - 1
+	unfillAudioBuffer.MaxSampleCount = uint32(audio.SampleCount()*3) - 1
 	unfillAudioBuffer.UnfillSampleCount = uint32(audio.SampleCount())
 
 	for times := 0; times < 2; times++ {

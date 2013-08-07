@@ -17,7 +17,7 @@ func (pseudoBuffer *RefillAudioBuffer) AudioOut(audio *Audio) {
 }
 
 func (pseudoBuffer *RefillAudioBuffer) Read() (audio *Audio) {
-	if ! pseudoBuffer.readable {
+	if !pseudoBuffer.readable {
 		return nil
 	}
 

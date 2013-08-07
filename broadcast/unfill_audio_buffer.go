@@ -1,14 +1,14 @@
 package broadcast
 
 import (
-	"time"
 	"fmt"
+	"time"
 )
 
 type UnfillAudioBuffer struct {
 	Buffer AudioBuffer
 
-	MaxSampleCount uint32
+	MaxSampleCount    uint32
 	UnfillSampleCount uint32
 }
 
@@ -25,7 +25,7 @@ func (pseudoBuffer *UnfillAudioBuffer) unfill() {
 	for pseudoBuffer.Buffer.SampleCount() > targetSampleCount {
 		pseudoBuffer.Buffer.Read()
 	}
-	fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount - pseudoBuffer.Buffer.SampleCount())
+	fmt.Printf("%v Unfill duration : %d samples\n", time.Now(), initialSampleCount-pseudoBuffer.Buffer.SampleCount())
 }
 
 func (pseudoBuffer *UnfillAudioBuffer) AudioOut(audio *Audio) {

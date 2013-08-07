@@ -1,10 +1,10 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"time"
-	"flag"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
@@ -23,19 +23,19 @@ func main() {
 	flag.Float64Var(&highUnfillMax, "high-max", 10, "Max duration of buffer (in seconds)")
 	flag.Float64Var(&highUnfill, "high-unfill", 3, "Duration to unfill when buffer is full (in seconds)")
 	flag.DurationVar(&statusLoop, "status-loop", 0, "Duration between two status dump (0 to disable)")
-	flag.DurationVar(&httpReadTimeout, "http-read-timeout", 10 * time.Second, "Read timeout before creating a new http connection")
-	flag.DurationVar(&httpWaitOnError, "http-wait-on-error", 5 * time.Second, "Delay after http error")
+	flag.DurationVar(&httpReadTimeout, "http-read-timeout", 10*time.Second, "Read timeout before creating a new http connection")
+	flag.DurationVar(&httpWaitOnError, "http-wait-on-error", 5*time.Second, "Delay after http error")
 
 	flag.Usage = func() {
-    fmt.Fprintf(os.Stderr, "Usage: %s [options] <url>\n", os.Args[0])
-    flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] <url>\n", os.Args[0])
+		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
 	if flag.NArg() != 1 {
 		flag.Usage()
-	 	os.Exit(1)
+		os.Exit(1)
 	}
 
 	httpInput := broadcast.HttpInput{Url: flag.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError}
@@ -55,21 +55,21 @@ func main() {
 	highUnfillMaxSampleCount := uint32(highUnfillMax * float64(sampleRate))
 	highUnfillSampleCount := uint32(highUnfill * float64(sampleRate))
 
-	audioBuffer := &broadcast.MutexAudioBuffer {
-		Buffer: &broadcast.UnfillAudioBuffer {
-			Buffer: &broadcast.AdjustAudioBuffer {
-				Buffer: &broadcast.RefillAudioBuffer {
-					Buffer: &broadcast.AdjustAudioBuffer {
-						Buffer: &broadcast.MemoryAudioBuffer{},
-						LimitSampleCount: lowAdjustLimitSampleCount,
+	audioBuffer := &broadcast.MutexAudioBuffer{
+		Buffer: &broadcast.UnfillAudioBuffer{
+			Buffer: &broadcast.AdjustAudioBuffer{
+				Buffer: &broadcast.RefillAudioBuffer{
+					Buffer: &broadcast.AdjustAudioBuffer{
+						Buffer:               &broadcast.MemoryAudioBuffer{},
+						LimitSampleCount:     lowAdjustLimitSampleCount,
 						ThresholdSampleCount: lowAdjustThresholdSampleCount,
 					},
 					MinSampleCount: lowRefillMinSampleCount,
 				},
-				LimitSampleCount: highAdjustLimitSampleCount,
+				LimitSampleCount:     highAdjustLimitSampleCount,
 				ThresholdSampleCount: highAdjustThresholdSampleCount,
 			},
-			MaxSampleCount: highUnfillMaxSampleCount,
+			MaxSampleCount:    highUnfillMaxSampleCount,
 			UnfillSampleCount: highUnfillSampleCount,
 		},
 	}

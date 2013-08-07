@@ -75,7 +75,7 @@ func TestRefillAudioBuffer_Write_EndsRefill(t *testing.T) {
 
 	refillAudioBuffer.AudioOut(audio)
 
-	if ! refillAudioBuffer.readable {
+	if !refillAudioBuffer.readable {
 		t.Errorf("Should reset readable when SampleCount > MinSampleCount")
 	}
 }

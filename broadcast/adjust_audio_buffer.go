@@ -10,7 +10,7 @@ import (
 type AdjustAudioBuffer struct {
 	Buffer AudioBuffer
 
-	LimitSampleCount uint32
+	LimitSampleCount     uint32
 	ThresholdSampleCount uint32
 }
 
@@ -18,7 +18,7 @@ func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
 	sampleCount := pseudoBuffer.SampleCount()
 
 	if pseudoBuffer.LimitSampleCount == 0 && pseudoBuffer.ThresholdSampleCount == 0 {
-		return 0;
+		return 0
 	}
 
 	rawRate := (float64(sampleCount) - float64(pseudoBuffer.ThresholdSampleCount)) / (float64(pseudoBuffer.LimitSampleCount) - float64(pseudoBuffer.ThresholdSampleCount))
@@ -43,13 +43,13 @@ func (pseudoBuffer *AdjustAudioBuffer) addAudio() bool {
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) removeAudio() bool {
-	return ! pseudoBuffer.addAudio()
+	return !pseudoBuffer.addAudio()
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) AudioOut(audio *Audio) {
 	pseudoBuffer.Buffer.AudioOut(audio)
 
-	if pseudoBuffer.removeAudio() && pseudoBuffer.adjust()  {
+	if pseudoBuffer.removeAudio() && pseudoBuffer.adjust() {
 		pseudoBuffer.logAdjustment(pseudoBuffer.Buffer.Read())
 	}
 }
@@ -67,13 +67,13 @@ func (pseudoBuffer *AdjustAudioBuffer) adjust() bool {
 
 func (pseudoBuffer *AdjustAudioBuffer) logAdjustment(audio *Audio) *Audio {
 	if audio != nil {
-		fmt.Printf("%v Adjustment : %d samples\n", time.Now(), pseudoBuffer.adjustmentFactor() * audio.SampleCount())
+		fmt.Printf("%v Adjustment : %d samples\n", time.Now(), pseudoBuffer.adjustmentFactor()*audio.SampleCount())
 	}
 	return audio
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) Read() (audio *Audio) {
-	if pseudoBuffer.addAudio() && pseudoBuffer.adjust()  {
+	if pseudoBuffer.addAudio() && pseudoBuffer.adjust() {
 		return pseudoBuffer.logAdjustment(&Audio{sampleCount: 512, channelCount: 2})
 	} else {
 		return pseudoBuffer.Buffer.Read()

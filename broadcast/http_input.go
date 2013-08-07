@@ -3,11 +3,11 @@ package broadcast
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
-	"io"
 )
 
 type HttpInput struct {
@@ -19,8 +19,8 @@ type HttpInput struct {
 	oggDecoder    OggDecoder
 	vorbisDecoder VorbisDecoder
 
-	ReadTimeout   time.Duration
-	WaitOnError   time.Duration
+	ReadTimeout time.Duration
+	WaitOnError time.Duration
 }
 
 func (input *HttpInput) dialTimeout(network, addr string) (net.Conn, error) {
@@ -151,12 +151,12 @@ func (input *HttpInput) GetWaitOnError() time.Duration {
 	if input.WaitOnError == 0 {
 		input.WaitOnError = 5 * time.Second
 	}
-	return input.WaitOnError;
+	return input.WaitOnError
 }
 
 func (input *HttpInput) GetReadTimeout() time.Duration {
 	if input.ReadTimeout == 0 {
 		input.ReadTimeout = 10 * time.Second
 	}
-	return input.ReadTimeout;
+	return input.ReadTimeout
 }
