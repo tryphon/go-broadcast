@@ -6,26 +6,26 @@ import (
 	"os"
 )
 
-type AlsaSink struct {
+type AlsaOutput struct {
 	handle      alsa.Handle
 	sampleCount int64
 }
 
-func (sink *AlsaSink) Init() error {
-	err := sink.handle.Open("default", alsa.StreamTypePlayback, alsa.ModeBlock)
+func (output *AlsaOutput) Init() error {
+	err := output.handle.Open("default", alsa.StreamTypePlayback, alsa.ModeBlock)
 	if err != nil {
 		return err
 	}
 
-	sink.handle.SampleFormat = alsa.SampleFormatS16LE
-	sink.handle.SampleRate = 44100
-	sink.handle.Channels = 2
+	output.handle.SampleFormat = alsa.SampleFormatS16LE
+	output.handle.SampleRate = 44100
+	output.handle.Channels = 2
 
-	err = sink.handle.ApplyHwParams()
+	err = output.handle.ApplyHwParams()
 	return err
 }
 
-func (alsa *AlsaSink) AudioOut(audio *Audio) {
+func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 	pcmBytes := audio.PcmBytes()
 
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
@@ -47,6 +47,6 @@ func (alsa *AlsaSink) AudioOut(audio *Audio) {
 	// Log.Debugf("wrote %d bytes in alsa\n", alsaWriteLength)
 }
 
-func (alsa *AlsaSink) SampleCount() int64 {
+func (alsa *AlsaOutput) SampleCount() int64 {
 	return alsa.sampleCount
 }

@@ -18,10 +18,22 @@ func main() {
 	switch command {
 	case "httpclient":
 		httpClient(os.Args[2:])
+	case "udpClient":
+		udpClient(os.Args[2:])
+	case "udpServer":
+		udpServer(os.Args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|... <url>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|udpClient|udpServer <url>\n", os.Args[0])
 		os.Exit(1)
 	}
+}
+
+func udpClient(arguments []string) {
+
+}
+
+func udpServer(arguments []string) {
+
 }
 
 func httpClient(arguments []string) {
@@ -66,9 +78,9 @@ func httpClient(arguments []string) {
 	err := httpInput.Init()
 	checkError(err)
 
-	alsaSink := broadcast.AlsaSink{}
+	alsaOutput := broadcast.AlsaOutput{}
 
-	err = alsaSink.Init()
+	err = alsaOutput.Init()
 	checkError(err)
 
 	lowAdjustLimitSampleCount := uint32(lowAdjustLimit * float64(sampleRate))
@@ -128,7 +140,7 @@ func httpClient(arguments []string) {
 			}
 		}
 
-		alsaSink.AudioOut(audio)
+		alsaOutput.AudioOut(audio)
 	}
 }
 
