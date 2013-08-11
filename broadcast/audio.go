@@ -2,6 +2,9 @@ package broadcast
 
 import (
 	"github.com/grd/vorbis"
+	"bytes"
+	"encoding/binary"
+	"fmt"
 )
 
 type AudioHandler interface {
@@ -24,11 +27,43 @@ func NewAudio() *Audio {
 	return &Audio{sampleCount: 1024, channelCount: 2}
 }
 
+func (audio *Audio) Samples(channel int) ([]float32) {
+	return audio.samples[channel]
+}
+
 func (audio *Audio) SampleCount() int {
 	return audio.sampleCount
 }
 
-func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCount int) {
+func (audio *Audio) ChannelCount() int {
+	return audio.channelCount
+}
+
+func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount int) {
+	audio.channelCount = channelCount
+	audio.sampleCount = sampleCount
+
+	audio.samples = make([][]float32, channelCount)
+	for channel := 0; channel < channelCount; channel++ {
+		audio.samples[channel] = make([]float32, sampleCount)
+	}
+
+	buffer := bytes.NewBuffer(pcmBytes)
+
+	for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
+		for channel := 0; channel < channelCount; channel++ {
+	 		var pcmSample int16
+	 		err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
+	 		if err != nil {
+	 			// FIXME
+				fmt.Println("Error")
+			}
+			audio.samples[channel][samplePosition] = pcmSampleToFloat(pcmSample)
+		}
+	}
+}
+
+func (audio *Audio) LoadPcmFloats(pcmArray ***float32, sampleCount int, channelCount int) {
 	audio.samples = make([][]float32, 2)
 	audio.channelCount = channelCount
 	audio.sampleCount = sampleCount
@@ -39,6 +74,14 @@ func (audio *Audio) LoadPcmArray(pcmArray ***float32, sampleCount int, channelCo
 		for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
 			audio.samples[channel][samplePosition] = vorbis.PcmArrayHelper(*pcmArray, channel, samplePosition)
 		}
+	}
+}
+
+func pcmSampleToFloat(pcmSample int16) (float32) {
+	if pcmSample != -32768 {
+		return float32(pcmSample) / 32767
+	} else {
+		return -1
 	}
 }
 

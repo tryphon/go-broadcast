@@ -89,7 +89,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 				// Log.Debugf("read %d samples\n", samples)
 				if decoder.audioHandler != nil {
 					audio := new(Audio)
-					audio.LoadPcmArray(&rawFloatBuffer, samples, 2)
+					audio.LoadPcmFloats(&rawFloatBuffer, samples, 2)
 
 					decoder.audioHandler.AudioOut(audio)
 				}

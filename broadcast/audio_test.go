@@ -6,6 +6,43 @@ import (
 	"testing"
 )
 
+func TestAudio_floatSamplesToBytes(t *testing.T) {
+	var conditions = []struct {
+		floatSample  float32
+		bytesSample [2]byte
+	}{
+		{1, [2]byte{255, 127} },
+		{0, [2]byte{0, 0} },
+		{-1, [2]byte{1, 128} },
+	}
+
+	for i, condition := range conditions {
+		byte1, byte2 := floatSamplesToBytes(condition.floatSample)
+		bytes := [2]byte{byte1, byte2}
+		if bytes != condition.bytesSample {
+			t.Errorf("#%d: Wrong bytes value for %v:\n got: %v\nwant: %v", i, condition.floatSample, bytes, condition.bytesSample)
+		}
+	}
+}
+
+func TestAudio_pcmSampleToFloat(t *testing.T) {
+	var conditions = []struct {
+		pcmSample int16
+		floatSample  float32
+	}{
+		{32767, 1},
+		{0, 0},
+		{-32768, -1},
+	}
+
+	for i, condition := range conditions {
+		floatSample := pcmSampleToFloat(condition.pcmSample)
+		if floatSample != condition.floatSample {
+			t.Errorf("#%d: Wrong float value for %v:\n got: %v\nwant: %v", i, condition.pcmSample, floatSample, condition.floatSample)
+		}
+	}
+}
+
 func TestAudio_PcmBytes_Length(t *testing.T) {
 	var conditions = []struct {
 		sampleCount  int
@@ -26,6 +63,7 @@ func TestAudio_PcmBytes_Length(t *testing.T) {
 		}
 	}
 }
+
 
 func TestAudio_PcmBytes_ChannelContent(t *testing.T) {
 	audio := Audio{sampleCount: 4, channelCount: 2}
@@ -62,6 +100,27 @@ func TestAudio_PcmBytes_ChannelContent(t *testing.T) {
 			}
 		}
 
+	}
+}
+
+func TestAudio_LoadPcmBytes(t *testing.T) {
+	audio := Audio{}
+	audio.LoadPcmBytes([]byte{255, 127, 0, 0, 0, 0, 1, 128}, 2, 2)
+
+	if audio.SampleCount() != 2 {
+		t.Errorf("Wrong sample count value:\n got: %d\nwant: %d", audio.SampleCount(), 2)
+	}
+	if audio.Samples(0)[0] != 1 {
+		t.Errorf("Wrong sample value:\n got: %d\nwant: %d", audio.Samples(0)[0], 1)
+	}
+	if audio.Samples(0)[1] != 0 {
+		t.Errorf("Wrong sample value:\n got: %d\nwant: %d", audio.Samples(0)[1], 0)
+	}
+	if audio.Samples(1)[0] != 0 {
+		t.Errorf("Wrong sample value:\n got: %d\nwant: %d", audio.Samples(1)[0], 0)
+	}
+	if audio.Samples(1)[1] != -1 {
+		t.Errorf("Wrong sample value:\n got: %d\nwant: %d", audio.Samples(1)[1], -1)
 	}
 }
 

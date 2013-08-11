@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"math"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
@@ -18,18 +19,42 @@ func main() {
 	switch command {
 	case "httpclient":
 		httpClient(os.Args[2:])
-	case "udpClient":
+	case "udpclient":
 		udpClient(os.Args[2:])
-	case "udpServer":
+	case "udpserver":
 		udpServer(os.Args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|udpClient|udpServer <url>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|udpclient|udpserver <url>\n", os.Args[0])
 		os.Exit(1)
 	}
 }
 
 func udpClient(arguments []string) {
+	alsaInput := broadcast.AlsaInput{}
 
+	err := alsaInput.Init()
+	checkError(err)
+
+	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+		var peak float64 = 0
+		for channel := 0; channel < audio.ChannelCount(); channel++ {
+			for _, sample := range audio.Samples(channel) {
+				value := math.Abs(float64(sample))
+				if value > peak {
+					peak = value
+				}
+			}
+		}
+
+		fmt.Printf("Peak: %02.2f\n", 20 * math.Log10(peak))
+	})
+	alsaInput.SetAudioHandler(audioHandler)
+
+	go alsaInput.Run()
+
+	for {
+		time.Sleep(2 * time.Second)
+	}
 }
 
 func udpServer(arguments []string) {
