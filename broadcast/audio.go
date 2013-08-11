@@ -4,7 +4,6 @@ import (
 	"github.com/grd/vorbis"
 	"bytes"
 	"encoding/binary"
-	"fmt"
 )
 
 type AudioHandler interface {
@@ -23,12 +22,18 @@ type Audio struct {
 	sampleCount  int
 }
 
-func NewAudio() *Audio {
-	return &Audio{sampleCount: 1024, channelCount: 2}
+func NewAudio(sampleCount int, channelCount int) *Audio {
+	audio := &Audio{sampleCount: sampleCount, channelCount: channelCount}
+	audio.samples = make([][]float32, channelCount)
+	return audio
 }
 
 func (audio *Audio) Samples(channel int) ([]float32) {
 	return audio.samples[channel]
+}
+
+func (audio *Audio) SetSamples(channel int, samples []float32) {
+	audio.samples[channel] = samples
 }
 
 func (audio *Audio) SampleCount() int {
@@ -55,8 +60,7 @@ func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount 
 	 		var pcmSample int16
 	 		err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
 	 		if err != nil {
-	 			// FIXME
-				fmt.Println("Error")
+				Log.Printf("Can't read correctly pcm buffer: %s", err.Error())
 			}
 			audio.samples[channel][samplePosition] = pcmSampleToFloat(pcmSample)
 		}
