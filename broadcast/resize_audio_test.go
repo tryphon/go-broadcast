@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func sameSamples(samples1 []float32, samples2 []float32) (bool) {
+func sameSamples(samples1 []float32, samples2 []float32) bool {
 	if len(samples1) != len(samples2) {
 		return false
 	}
@@ -16,10 +16,10 @@ func sameSamples(samples1 []float32, samples2 []float32) (bool) {
 	return true
 }
 
-func makeSampleSequence(sampleCount int) ([]float32) {
+func makeSampleSequence(sampleCount int) []float32 {
 	sequence := make([]float32, sampleCount)
 	for index := range sequence {
-		sequence[index] = float32(index % 3 - 1)
+		sequence[index] = float32(index%3 - 1)
 	}
 	return sequence
 }
@@ -35,8 +35,8 @@ func TestResizeAudio_resize_smaller(t *testing.T) {
 			t.Errorf("Wrong sample count:\n got: %v\nwant: %v", audio.SampleCount(), expectedSampleCount)
 		}
 
-		expectedSamples := sequence[receivedSampleCount:receivedSampleCount+expectedSampleCount]
-		if ! sameSamples(audio.Samples(0), expectedSamples) {
+		expectedSamples := sequence[receivedSampleCount : receivedSampleCount+expectedSampleCount]
+		if !sameSamples(audio.Samples(0), expectedSamples) {
 			t.Errorf("Wrong sample values:\n got: %v\nwant: %v", audio.Samples(0), expectedSamples)
 		}
 
@@ -44,7 +44,7 @@ func TestResizeAudio_resize_smaller(t *testing.T) {
 	})
 	resizeAudio := ResizeAudio{SampleCount: expectedSampleCount, ChannelCount: 2, Output: audioHandler}
 
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 	audio.SetSamples(0, sequence)
 	audio.SetSamples(1, sequence)
 
@@ -65,7 +65,7 @@ func TestResizeAudio_resize_bigger(t *testing.T) {
 			t.Errorf("Wrong sample count:\n got: %v\nwant: %v", audio.SampleCount(), len(sequence))
 		}
 
-		if ! sameSamples(audio.Samples(0), sequence) {
+		if !sameSamples(audio.Samples(0), sequence) {
 			t.Errorf("Wrong sample values:\n got: %v\nwant: %v", audio.Samples(0), sequence)
 		}
 
@@ -81,7 +81,7 @@ func TestResizeAudio_resize_bigger(t *testing.T) {
 		firstSampleSlice := slice * audioLength
 		lastSampleSlice := (slice + 1) * audioLength
 
-		audio := NewAudio(2,2)
+		audio := NewAudio(2, 2)
 		audio.SetSamples(0, sequence[firstSampleSlice:lastSampleSlice])
 		audio.SetSamples(1, sequence[firstSampleSlice:lastSampleSlice])
 

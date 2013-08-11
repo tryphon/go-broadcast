@@ -8,12 +8,12 @@ import (
 
 func TestAudio_floatSamplesToBytes(t *testing.T) {
 	var conditions = []struct {
-		floatSample  float32
+		floatSample float32
 		bytesSample [2]byte
 	}{
-		{1, [2]byte{255, 127} },
-		{0, [2]byte{0, 0} },
-		{-1, [2]byte{1, 128} },
+		{1, [2]byte{255, 127}},
+		{0, [2]byte{0, 0}},
+		{-1, [2]byte{1, 128}},
 	}
 
 	for i, condition := range conditions {
@@ -27,8 +27,8 @@ func TestAudio_floatSamplesToBytes(t *testing.T) {
 
 func TestAudio_pcmSampleToFloat(t *testing.T) {
 	var conditions = []struct {
-		pcmSample int16
-		floatSample  float32
+		pcmSample   int16
+		floatSample float32
 	}{
 		{32767, 1},
 		{0, 0},
@@ -63,7 +63,6 @@ func TestAudio_PcmBytes_Length(t *testing.T) {
 		}
 	}
 }
-
 
 func TestAudio_PcmBytes_ChannelContent(t *testing.T) {
 	audio := Audio{sampleCount: 4, channelCount: 2}

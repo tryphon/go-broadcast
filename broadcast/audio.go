@@ -1,9 +1,9 @@
 package broadcast
 
 import (
-	"github.com/grd/vorbis"
 	"bytes"
 	"encoding/binary"
+	"github.com/grd/vorbis"
 )
 
 type AudioHandler interface {
@@ -28,7 +28,7 @@ func NewAudio(sampleCount int, channelCount int) *Audio {
 	return audio
 }
 
-func (audio *Audio) Samples(channel int) ([]float32) {
+func (audio *Audio) Samples(channel int) []float32 {
 	return audio.samples[channel]
 }
 
@@ -57,9 +57,9 @@ func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount 
 
 	for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
 		for channel := 0; channel < channelCount; channel++ {
-	 		var pcmSample int16
-	 		err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
-	 		if err != nil {
+			var pcmSample int16
+			err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
+			if err != nil {
 				Log.Printf("Can't read correctly pcm buffer: %s", err.Error())
 			}
 			audio.samples[channel][samplePosition] = pcmSampleToFloat(pcmSample)
@@ -81,7 +81,7 @@ func (audio *Audio) LoadPcmFloats(pcmArray ***float32, sampleCount int, channelC
 	}
 }
 
-func pcmSampleToFloat(pcmSample int16) (float32) {
+func pcmSampleToFloat(pcmSample int16) float32 {
 	if pcmSample != -32768 {
 		return float32(pcmSample) / 32767
 	} else {

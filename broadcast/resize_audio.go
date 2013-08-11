@@ -1,15 +1,13 @@
 package broadcast
 
-import (
-
-)
+import ()
 
 type ResizeAudio struct {
-	Output AudioHandler
-	SampleCount int
+	Output       AudioHandler
+	SampleCount  int
 	ChannelCount int
 
-	pendingAudio *Audio
+	pendingAudio       *Audio
 	pendingSampleCount int
 }
 
@@ -21,11 +19,11 @@ func (resize *ResizeAudio) newPendingAudio() {
 	resize.pendingSampleCount = 0
 }
 
-func (resize *ResizeAudio) pendingCapacity() (int) {
+func (resize *ResizeAudio) pendingCapacity() int {
 	return resize.SampleCount - resize.pendingSampleCount
 }
 
-func (resize *ResizeAudio) maxSampleCount(sampleCount int) (int) {
+func (resize *ResizeAudio) maxSampleCount(sampleCount int) int {
 	if sampleCount <= resize.pendingCapacity() {
 		return sampleCount
 	} else {
@@ -44,8 +42,6 @@ func (resize *ResizeAudio) AudioOut(audio *Audio) {
 		sampleCount := resize.maxSampleCount(audio.SampleCount() - consumedSampleCount)
 		lastSampleSlice := firstSampleSlice + sampleCount
 
-		// Log.Debugf("copy %d:%d to %d:", firstSampleSlice, lastSampleSlice, resize.pendingSampleCount)
-
 		for channel := 0; channel < resize.ChannelCount; channel++ {
 			copy(resize.pendingAudio.Samples(channel)[resize.pendingSampleCount:], audio.Samples(channel)[firstSampleSlice:lastSampleSlice])
 		}
@@ -53,25 +49,9 @@ func (resize *ResizeAudio) AudioOut(audio *Audio) {
 		resize.pendingSampleCount += sampleCount
 		consumedSampleCount += sampleCount
 
-		// Log.Debugf("counters %d:%d", resize.pendingSampleCount, consumedSampleCount)
-
-		if (resize.pendingCapacity() == 0) {
-			// Log.Debugf("send Audio : %v", len(resize.pendingAudio.Samples(0)))
+		if resize.pendingCapacity() == 0 {
 			resize.Output.AudioOut(resize.pendingAudio)
 			resize.newPendingAudio()
 		}
 	}
-
-	// sliceCount := audio.SampleCount() / resize.SampleCount
-
-	// for slice := 0; slice < sliceCount; slice++ {
-	// 	firstSampleSlice := slice * resize.SampleCount
-	// 	lastSampleSlice := (slice + 1) * resize.SampleCount
-
-	// 	resizedAudio := NewAudio(resize.SampleCount, resize.ChannelCount)
-	// 	for channel := 0; channel < resize.ChannelCount; channel++ {
-	// 		resizedAudio.SetSamples(channel, audio.Samples(channel)[firstSampleSlice:lastSampleSlice])
-	// 	}
-	// 	resize.Output.AudioOut(resizedAudio)
-	// }
 }

@@ -20,7 +20,7 @@ func (soundMeter *SoundMeterAudioHandler) AudioOut(audio *Audio) {
 		}
 	}
 
-	fmt.Printf("Peak: %02.2f\n", 20 * math.Log10(peak))
+	fmt.Printf("Peak: %02.2f\n", 20*math.Log10(peak))
 
 	soundMeter.Output.AudioOut(audio)
 }

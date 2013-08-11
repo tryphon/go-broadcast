@@ -20,7 +20,7 @@ func TestUnfillAudioBuffer_NewUnfillAudioBuffer(t *testing.T) {
 func TestUnfillAudioBuffer_Read(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	audioBuffer.AudioOut(audio)
 
@@ -32,7 +32,7 @@ func TestUnfillAudioBuffer_Read(t *testing.T) {
 func TestUnfillAudioBuffer_Write(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	unfillAudioBuffer.AudioOut(audio)
 
@@ -55,7 +55,7 @@ func TestUnfillAudioBuffer_full(t *testing.T) {
 		t.Errorf("Should not be full when UnfillSampleCount is zero")
 	}
 
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 	audioBuffer.AudioOut(audio)
 	unfillAudioBuffer.MaxSampleCount = 1
 	unfillAudioBuffer.UnfillSampleCount = 1
@@ -69,7 +69,7 @@ func TestUnfillAudioBuffer_full(t *testing.T) {
 func TestUnfillAudioBuffer_unfill(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	for times := 0; times < 5; times++ {
 		audioBuffer.AudioOut(audio)
@@ -90,7 +90,7 @@ func TestUnfillAudioBuffer_unfill(t *testing.T) {
 func TestUnfillAudioBuffer_AudioOut(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	unfillAudioBuffer.AudioOut(audio)
 
@@ -102,7 +102,7 @@ func TestUnfillAudioBuffer_AudioOut(t *testing.T) {
 func TestUnfillAudioBuffer_AudioOut_WhenFull(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	unfillAudioBuffer := &UnfillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	unfillAudioBuffer.MaxSampleCount = uint32(audio.SampleCount()*3) - 1
 	unfillAudioBuffer.UnfillSampleCount = uint32(audio.SampleCount())

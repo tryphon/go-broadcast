@@ -1,18 +1,18 @@
 package broadcast
 
 import (
-	alsa "github.com/tryphon/alsa-go"
 	"fmt"
+	alsa "github.com/tryphon/alsa-go"
 	"os"
 )
 
 type AlsaInput struct {
-	handle      alsa.Handle
+	handle alsa.Handle
 
 	audioHandler AudioHandler
 
 	bufferLength int
-	buffer []byte
+	buffer       []byte
 }
 
 func (input *AlsaInput) Init() (err error) {
@@ -40,7 +40,7 @@ func (input *AlsaInput) Read() (err error) {
 	readBytes, err := input.handle.Read(input.buffer)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Write error : %v\n",  err)
+		fmt.Fprintf(os.Stderr, "Write error : %v\n", err)
 		return err
 	}
 	if readBytes != input.bufferLength {
@@ -48,7 +48,7 @@ func (input *AlsaInput) Read() (err error) {
 	}
 
 	audio := Audio{}
-	audio.LoadPcmBytes(input.buffer, readBytes / input.handle.FrameSize(), input.handle.Channels)
+	audio.LoadPcmBytes(input.buffer, readBytes/input.handle.FrameSize(), input.handle.Channels)
 
 	if input.audioHandler != nil {
 		input.audioHandler.AudioOut(&audio)

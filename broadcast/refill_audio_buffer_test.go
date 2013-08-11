@@ -20,7 +20,7 @@ func TestRefillAudioBuffer_NewRefillAudioBuffer(t *testing.T) {
 func TestRefillAudioBuffer_Read(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	refillAudioBuffer := &RefillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	refillAudioBuffer.readable = true
 	refillAudioBuffer.AudioOut(audio)
@@ -56,7 +56,7 @@ func TestRefillAudioBuffer_Read_WhenAudioBufferEmpty(t *testing.T) {
 func TestRefillAudioBuffer_Write(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	refillAudioBuffer := &RefillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	refillAudioBuffer.AudioOut(audio)
 
@@ -68,7 +68,7 @@ func TestRefillAudioBuffer_Write(t *testing.T) {
 func TestRefillAudioBuffer_Write_EndsRefill(t *testing.T) {
 	audioBuffer := &MemoryAudioBuffer{}
 	refillAudioBuffer := &RefillAudioBuffer{Buffer: audioBuffer}
-	audio := NewAudio(1024,2)
+	audio := NewAudio(1024, 2)
 
 	refillAudioBuffer.MinSampleCount = uint32(audio.SampleCount() - 1)
 	refillAudioBuffer.readable = false
