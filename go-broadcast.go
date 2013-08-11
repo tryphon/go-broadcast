@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-	"math"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
@@ -35,19 +34,17 @@ func udpClient(arguments []string) {
 	err := alsaInput.Init()
 	checkError(err)
 
-	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
-		var peak float64 = 0
-		for channel := 0; channel < audio.ChannelCount(); channel++ {
-			for _, sample := range audio.Samples(channel) {
-				value := math.Abs(float64(sample))
-				if value > peak {
-					peak = value
-				}
-			}
-		}
+	udpOutput := &broadcast.UDPOutput{Target: "localhost:7890"}
+	err = udpOutput.Init()
+	checkError(err)
 
-		fmt.Printf("Peak: %02.2f\n", 20 * math.Log10(peak))
-	})
+	audioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: &broadcast.ResizeAudio{
+			Output:       udpOutput,
+			SampleCount:  150,
+			ChannelCount: 2,
+		},
+	}
 	alsaInput.SetAudioHandler(audioHandler)
 
 	go alsaInput.Run()
@@ -58,7 +55,30 @@ func udpClient(arguments []string) {
 }
 
 func udpServer(arguments []string) {
+	alsaOutput := &broadcast.AlsaOutput{}
 
+	err := alsaOutput.Init()
+	checkError(err)
+
+	udpInput := &broadcast.UDPInput{Bind: ":7890"}
+	err = udpInput.Init()
+	checkError(err)
+
+	audioHandler := &broadcast.ResizeAudio{
+		Output: &broadcast.SoundMeterAudioHandler{
+			Output: alsaOutput,
+		},
+		SampleCount:  1024,
+		ChannelCount: 2,
+	}
+
+	udpInput.SetAudioHandler(audioHandler)
+
+	go udpInput.Run()
+
+	for {
+		time.Sleep(2 * time.Second)
+	}
 }
 
 func httpClient(arguments []string) {
@@ -138,7 +158,13 @@ func httpClient(arguments []string) {
 	broadcast.Log.Debugf("AudioBuffer low-adjust-limit %d, low-adjust-threshold %d, low-refill %d", lowAdjustLimitSampleCount, lowAdjustThresholdSampleCount, lowRefillMinSampleCount)
 	broadcast.Log.Debugf("AudioBuffer high-adjust-threshold %d, high-adjust-limit %d, high-max %d, high-unfill %d", highAdjustLimitSampleCount, highAdjustThresholdSampleCount, highUnfillMaxSampleCount, highUnfillSampleCount)
 
-	httpInput.SetAudioHandler(audioBuffer)
+	httpInput.SetAudioHandler(
+		&broadcast.ResizeAudio{
+			Output:       audioBuffer,
+			SampleCount:  1024,
+			ChannelCount: 2,
+		},
+	)
 
 	if statusLoop > 0 {
 		go func() {
@@ -156,7 +182,7 @@ func httpClient(arguments []string) {
 	for {
 		audio := audioBuffer.Read()
 		if audio == nil {
-			audio = broadcast.NewAudio()
+			audio = broadcast.NewAudio(1024, 2)
 			blankDuration += uint32(audio.SampleCount())
 		} else {
 			if blankDuration > 0 {
