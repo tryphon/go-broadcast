@@ -115,3 +115,21 @@ func (audio *Audio) PcmBytes() []byte {
 
 	return pcmBytes
 }
+
+func (audio *Audio) InterleavedFloats() []float32 {
+	floatCount := audio.channelCount * audio.sampleCount
+	floats := make([]float32, floatCount)
+
+	floatPosition := 0
+
+	for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
+		for channel := 0; channel < audio.channelCount; channel++ {
+			if audio.samples[channel] != nil {
+				floats[floatPosition] = audio.samples[channel][samplePosition]
+			}
+			floatPosition += 1
+		}
+	}
+
+	return floats
+}

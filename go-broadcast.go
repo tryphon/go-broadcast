@@ -22,9 +22,33 @@ func main() {
 		udpClient(os.Args[2:])
 	case "udpserver":
 		udpServer(os.Args[2:])
+	case "backup":
+		backup(os.Args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|udpclient|udpserver <url>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|backup|udpclient|udpserver <url>\n", os.Args[0])
 		os.Exit(1)
+	}
+}
+
+func backup(arguments []string) {
+	alsaInput := broadcast.AlsaInput{}
+
+	err := alsaInput.Init()
+	checkError(err)
+
+	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: "/tmp"}
+	// err = timedFileOutput.Init()
+	// checkError(err)
+
+	audioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: timedFileOutput,
+	}
+	alsaInput.SetAudioHandler(audioHandler)
+
+	go alsaInput.Run()
+
+	for {
+		time.Sleep(2 * time.Second)
 	}
 }
 
