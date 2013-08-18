@@ -31,12 +31,28 @@ func main() {
 }
 
 func backup(arguments []string) {
+	flags := flag.NewFlagSet("backup", flag.ExitOnError)
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] backup <root-directory>\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	flags.Parse(arguments)
+
+	if flags.NArg() != 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	var rootDirectory string = flags.Arg(0)
+
 	alsaInput := broadcast.AlsaInput{}
 
 	err := alsaInput.Init()
 	checkError(err)
 
-	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: "/tmp"}
+	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: rootDirectory}
 	// err = timedFileOutput.Init()
 	// checkError(err)
 
