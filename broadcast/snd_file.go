@@ -69,6 +69,10 @@ func (file *SndFile) WriteFloat(samples []float32) int64 {
 	return int64(C.sf_write_float(file.handle, (*C.float)(unsafe.Pointer(&samples[0])), C.sf_count_t(len(samples))))
 }
 
+func (file *SndFile) ReadFloat(samples []float32) int64 {
+	return int64(C.sf_read_float(file.handle, (*C.float)(unsafe.Pointer(&samples[0])), C.sf_count_t(len(samples))))
+}
+
 func (file *SndFile) WriteSync() {
 	C.sf_write_sync(file.handle)
 }
