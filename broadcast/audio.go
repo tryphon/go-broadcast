@@ -10,6 +10,9 @@ type AudioHandler interface {
 	AudioOut(audio *Audio)
 }
 
+// audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+//   ...
+// })
 type AudioHandlerFunc func(audio *Audio)
 
 func (f AudioHandlerFunc) AudioOut(audio *Audio) {
@@ -132,4 +135,23 @@ func (audio *Audio) InterleavedFloats() []float32 {
 	}
 
 	return floats
+}
+
+func (audio *Audio) LoadInterleavedFloats(samples []float32, sampleCount int, channelCount int) {
+	audio.samples = make([][]float32, channelCount)
+	audio.channelCount = channelCount
+	audio.sampleCount = sampleCount
+
+	for channel := 0; channel < channelCount; channel++ {
+		audio.samples[channel] = make([]float32, sampleCount)
+	}
+
+	floatPosition := 0
+
+	for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
+		for channel := 0; channel < channelCount; channel++ {
+			audio.samples[channel][samplePosition] = samples[floatPosition]
+			floatPosition += 1
+		}
+	}
 }
