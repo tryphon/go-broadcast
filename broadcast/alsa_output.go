@@ -8,17 +8,28 @@ import (
 
 type AlsaOutput struct {
 	handle      alsa.Handle
+	Device      string
+	SampleRate  int
+
 	sampleCount int64
 }
 
 func (output *AlsaOutput) Init() error {
-	err := output.handle.Open("default", alsa.StreamTypePlayback, alsa.ModeBlock)
+	if (output.Device == "") {
+		output.Device = "default"
+	}
+
+	err := output.handle.Open(output.Device, alsa.StreamTypePlayback, alsa.ModeBlock)
 	if err != nil {
 		return err
 	}
 
+	if (output.SampleRate == 0) {
+		output.SampleRate = 44100
+	}
+
 	output.handle.SampleFormat = alsa.SampleFormatS16LE
-	output.handle.SampleRate = 44100
+	output.handle.SampleRate = output.SampleRate
 	output.handle.Channels = 2
 
 	err = output.handle.ApplyHwParams()

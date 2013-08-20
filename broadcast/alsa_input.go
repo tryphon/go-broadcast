@@ -8,6 +8,8 @@ import (
 
 type AlsaInput struct {
 	handle alsa.Handle
+	Device      string
+	SampleRate int
 
 	audioHandler AudioHandler
 
@@ -16,13 +18,21 @@ type AlsaInput struct {
 }
 
 func (input *AlsaInput) Init() (err error) {
-	err = input.handle.Open("default", alsa.StreamTypeCapture, alsa.ModeBlock)
+	if (input.Device == "") {
+		input.Device = "default"
+	}
+
+	err = input.handle.Open(input.Device, alsa.StreamTypeCapture, alsa.ModeBlock)
 	if err != nil {
 		return err
 	}
 
+	if (input.SampleRate == 0) {
+		input.SampleRate = 44100
+	}
+
 	input.handle.SampleFormat = alsa.SampleFormatS16LE
-	input.handle.SampleRate = 44100
+	input.handle.SampleRate = input.SampleRate
 	input.handle.Channels = 2
 
 	input.bufferLength = 4096
