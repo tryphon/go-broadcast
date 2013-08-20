@@ -69,21 +69,34 @@ func backup(arguments []string) {
 }
 
 func udpClient(arguments []string) {
-	alsaInput := broadcast.AlsaInput{}
+	flags := flag.NewFlagSet("udpclient", flag.ExitOnError)
+
+	var alsaDevice string
+	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to capture sound")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] udpclient <host>:<port>\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	flags.Parse(arguments)
+
+	if flags.NArg() != 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	alsaInput := broadcast.AlsaInput{Device: alsaDevice, SampleRate: 48000}
 
 	err := alsaInput.Init()
 	checkError(err)
 
-	udpOutput := &broadcast.UDPOutput{Target: "localhost:7890"}
+	udpOutput := &broadcast.UDPOutput{Target: flags.Arg(0)}
 	err = udpOutput.Init()
 	checkError(err)
 
 	audioHandler := &broadcast.SoundMeterAudioHandler{
-		Output: &broadcast.ResizeAudio{
-			Output:       udpOutput,
-			SampleCount:  150,
-			ChannelCount: 2,
-		},
+		Output: udpOutput,
 	}
 	alsaInput.SetAudioHandler(audioHandler)
 
@@ -95,12 +108,29 @@ func udpClient(arguments []string) {
 }
 
 func udpServer(arguments []string) {
-	alsaOutput := &broadcast.AlsaOutput{}
+	flags := flag.NewFlagSet("udpserver", flag.ExitOnError)
+
+	var alsaDevice string
+	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to play sound")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] udpserver [bind]:<port>\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	flags.Parse(arguments)
+
+	if flags.NArg() != 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	alsaOutput := &broadcast.AlsaOutput{Device: alsaDevice, SampleRate: 48000}
 
 	err := alsaOutput.Init()
 	checkError(err)
 
-	udpInput := &broadcast.UDPInput{Bind: ":7890"}
+	udpInput := &broadcast.UDPInput{Bind: flags.Arg(0)}
 	err = udpInput.Init()
 	checkError(err)
 

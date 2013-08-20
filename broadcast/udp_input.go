@@ -1,13 +1,12 @@
 package broadcast
 
 import (
-	"bytes"
-	"encoding/binary"
 	"net"
 )
 
 type UDPInput struct {
 	Bind string
+	Decoder AudioDecoder
 
 	connection   *net.UDPConn
 	audioHandler AudioHandler
@@ -31,6 +30,14 @@ func (input *UDPInput) Init() (err error) {
 	input.bufferLength = 4096
 	input.buffer = make([]byte, input.bufferLength)
 
+	opusDecoder := &OpusAudioDecoder{}
+	err = opusDecoder.Init()
+	if err != nil {
+		return err
+	}
+
+	input.Decoder = opusDecoder
+
 	return nil
 }
 
@@ -46,24 +53,11 @@ func (input *UDPInput) Read() (err error) {
 		return err
 	}
 
-	buffer := bytes.NewBuffer(input.buffer[:readLength])
-
-	var sampleCount int16
-	binary.Read(buffer, binary.LittleEndian, &sampleCount)
-
-	channelCount := 2
-
-	audio := NewAudio(int(sampleCount), channelCount)
-	for channel := 0; channel < channelCount; channel++ {
-		audio.SetSamples(channel, make([]float32, sampleCount))
-
-		for samplePosition := 0; samplePosition < audio.SampleCount(); samplePosition++ {
-			var sample float32
-			binary.Read(buffer, binary.LittleEndian, &sample)
-			audio.Samples(channel)[samplePosition] = sample
-		}
+	audio, err := input.Decoder.Decode(input.buffer[:readLength])
+	if err != nil {
+		Log.Printf("Can't decode data from UDP socket: %s", err.Error())
+		return err
 	}
-
 	input.audioHandler.AudioOut(audio)
 
 	return nil

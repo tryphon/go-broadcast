@@ -1,14 +1,16 @@
 package broadcast
 
 import (
-	"bytes"
-	"encoding/binary"
 	"net"
 )
 
 type UDPOutput struct {
 	Target     string
+	Encoder    AudioEncoder
+	PacketSampleCount int
+
 	connection net.Conn
+	resizeAudio *ResizeAudio
 }
 
 func (output *UDPOutput) Init() (err error) {
@@ -22,20 +24,44 @@ func (output *UDPOutput) Init() (err error) {
 		return err
 	}
 	output.connection = connection
+
+	if output.Encoder == nil {
+		opusEncoder := &OpusAudioEncoder{}
+		err = opusEncoder.Init()
+		if err != nil {
+			return err
+		}
+
+		output.Encoder = opusEncoder
+	}
+
+	if output.PacketSampleCount == 0 {
+		output.PacketSampleCount = 960
+	}
+
+	audioHandler := AudioHandlerFunc(func(audio *Audio) {
+		output.audioOut(audio)
+	})
+	output.resizeAudio = &ResizeAudio{
+		Output: audioHandler,
+		SampleCount:  output.PacketSampleCount,
+		ChannelCount: 2,
+	}
+
 	return nil
 }
 
 func (output *UDPOutput) AudioOut(audio *Audio) {
-	buffer := &bytes.Buffer{}
-	binary.Write(buffer, binary.LittleEndian, int16(audio.SampleCount()))
+	output.resizeAudio.AudioOut(audio)
+}
 
-	for channel := 0; channel < audio.ChannelCount(); channel++ {
-		for samplePosition := 0; samplePosition < audio.SampleCount(); samplePosition++ {
-			binary.Write(buffer, binary.LittleEndian, audio.Samples(channel)[samplePosition])
-		}
+func (output *UDPOutput) audioOut(audio *Audio) {
+	bytes, err := output.Encoder.Encode(audio)
+	if err != nil {
+		Log.Printf("Can't encode audio: %s", err.Error())
 	}
 
-	_, err := buffer.WriteTo(output.connection)
+	_, err = output.connection.Write(bytes)
 	if err != nil {
 		Log.Printf("Can't write data in UDP socket: %s", err.Error())
 	}
