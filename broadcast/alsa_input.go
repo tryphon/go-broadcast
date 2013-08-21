@@ -57,7 +57,7 @@ func (input *AlsaInput) Read() (err error) {
 	readBytes, err := input.handle.Read(input.buffer)
 
 	if err != nil {
-		Log.Printf("Write error : %v\n", err)
+		Log.Printf("Read error : %v\n", err)
 		return err
 	}
 	if readBytes != input.bufferLength {
