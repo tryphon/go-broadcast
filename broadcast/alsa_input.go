@@ -1,15 +1,14 @@
 package broadcast
 
 import (
-	"fmt"
 	alsa "github.com/tryphon/alsa-go"
-	"os"
 )
 
 type AlsaInput struct {
-	handle alsa.Handle
-	Device      string
-	SampleRate int
+	handle            alsa.Handle
+	Device            string
+	SampleRate        int
+	BufferSampleCount int
 
 	audioHandler AudioHandler
 
@@ -18,7 +17,7 @@ type AlsaInput struct {
 }
 
 func (input *AlsaInput) Init() (err error) {
-	if (input.Device == "") {
+	if input.Device == "" {
 		input.Device = "default"
 	}
 
@@ -27,7 +26,7 @@ func (input *AlsaInput) Init() (err error) {
 		return err
 	}
 
-	if (input.SampleRate == 0) {
+	if input.SampleRate == 0 {
 		input.SampleRate = 44100
 	}
 
@@ -35,11 +34,19 @@ func (input *AlsaInput) Init() (err error) {
 	input.handle.SampleRate = input.SampleRate
 	input.handle.Channels = 2
 
-	input.bufferLength = 4096
+	err = input.handle.ApplyHwParams()
+	if err != nil {
+		return err
+	}
+
+	if input.BufferSampleCount == 0 {
+		input.BufferSampleCount = 1024
+	}
+
+	input.bufferLength = input.BufferSampleCount * input.handle.FrameSize()
 	input.buffer = make([]byte, input.bufferLength)
 
-	err = input.handle.ApplyHwParams()
-	return err
+	return nil
 }
 
 func (input *AlsaInput) SetAudioHandler(audioHandler AudioHandler) {
@@ -50,18 +57,20 @@ func (input *AlsaInput) Read() (err error) {
 	readBytes, err := input.handle.Read(input.buffer)
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Write error : %v\n", err)
+		Log.Printf("Write error : %v\n", err)
 		return err
 	}
 	if readBytes != input.bufferLength {
-		fmt.Fprintf(os.Stderr, "Did not read whole buffer (Read %v, expected %v)\n", readBytes, input.bufferLength)
+		Log.Printf("Did not read whole buffer (Read %v, expected %v)\n", readBytes, input.bufferLength)
 	}
 
-	audio := Audio{}
-	audio.LoadPcmBytes(input.buffer, readBytes/input.handle.FrameSize(), input.handle.Channels)
+	if readBytes > 0 {
+		audio := Audio{}
+		audio.LoadPcmBytes(input.buffer, readBytes/input.handle.FrameSize(), input.handle.Channels)
 
-	if input.audioHandler != nil {
-		input.audioHandler.AudioOut(&audio)
+		if input.audioHandler != nil {
+			input.audioHandler.AudioOut(&audio)
+		}
 	}
 
 	return nil
