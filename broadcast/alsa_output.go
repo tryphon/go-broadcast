@@ -7,15 +7,15 @@ import (
 )
 
 type AlsaOutput struct {
-	handle      alsa.Handle
-	Device      string
-	SampleRate  int
+	handle     alsa.Handle
+	Device     string
+	SampleRate int
 
 	sampleCount int64
 }
 
 func (output *AlsaOutput) Init() error {
-	if (output.Device == "") {
+	if output.Device == "" {
 		output.Device = "default"
 	}
 
@@ -24,7 +24,7 @@ func (output *AlsaOutput) Init() error {
 		return err
 	}
 
-	if (output.SampleRate == 0) {
+	if output.SampleRate == 0 {
 		output.SampleRate = 44100
 	}
 

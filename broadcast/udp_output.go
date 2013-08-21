@@ -5,11 +5,11 @@ import (
 )
 
 type UDPOutput struct {
-	Target     string
-	Encoder    AudioEncoder
+	Target            string
+	Encoder           AudioEncoder
 	PacketSampleCount int
 
-	connection net.Conn
+	connection  net.Conn
 	resizeAudio *ResizeAudio
 }
 
@@ -43,7 +43,7 @@ func (output *UDPOutput) Init() (err error) {
 		output.audioOut(audio)
 	})
 	output.resizeAudio = &ResizeAudio{
-		Output: audioHandler,
+		Output:       audioHandler,
 		SampleCount:  output.PacketSampleCount,
 		ChannelCount: 2,
 	}

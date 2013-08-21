@@ -5,7 +5,7 @@ import (
 )
 
 type UDPInput struct {
-	Bind string
+	Bind    string
 	Decoder AudioDecoder
 
 	connection   *net.UDPConn

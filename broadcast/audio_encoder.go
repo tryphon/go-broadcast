@@ -15,7 +15,6 @@ type AudioDecoder interface {
 }
 
 type RawAudioEncoder struct {
-
 }
 
 func (encoder *RawAudioEncoder) Encode(audio *Audio) ([]byte, error) {
@@ -32,7 +31,6 @@ func (encoder *RawAudioEncoder) Encode(audio *Audio) ([]byte, error) {
 }
 
 type RawAudioDecoder struct {
-
 }
 
 func (decoder *RawAudioDecoder) Decode(data []byte) (*Audio, error) {
@@ -61,7 +59,7 @@ type OpusAudioEncoder struct {
 	opusEncoder *OpusEncoder
 }
 
-func (encoder *OpusAudioEncoder) Init() (error) {
+func (encoder *OpusAudioEncoder) Init() error {
 	opusEncoder, err := OpusEncoderCreate()
 	if err != nil {
 		return err
@@ -88,7 +86,7 @@ type OpusAudioDecoder struct {
 	opusDecoder *OpusDecoder
 }
 
-func (decoder *OpusAudioDecoder) Init() (error) {
+func (decoder *OpusAudioDecoder) Init() error {
 	opusDecoder, err := OpusDecoderCreate()
 	if err != nil {
 		return err
@@ -103,7 +101,7 @@ func (decoder *OpusAudioDecoder) Destroy() {
 
 func (decoder *OpusAudioDecoder) Decode(data []byte) (*Audio, error) {
 	frameCount := 960
-	samples := make([]float32, frameCount * 2)
+	samples := make([]float32, frameCount*2)
 
 	decodedFrameCount, err := decoder.opusDecoder.DecodeFloat(data, samples, frameCount)
 	if err != nil {

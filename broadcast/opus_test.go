@@ -1,8 +1,8 @@
 package broadcast
 
 import (
-	"testing"
 	"bytes"
+	"testing"
 	// "os"
 	"hash/crc32"
 )
@@ -22,7 +22,7 @@ func TestOpus_encode(t *testing.T) {
 
 	// 960 samples is 20 ms
 	frameCount := 960
-	samples := make([]float32, frameCount * 2)
+	samples := make([]float32, frameCount*2)
 
 	opusBytes := make([]byte, 2048)
 	opusBuffer := &bytes.Buffer{}
@@ -78,7 +78,7 @@ func TestOpus_decode(t *testing.T) {
 
 	// 960 samples is 20 ms
 	frameCount := 960
-	samples := make([]float32, frameCount * 2)
+	samples := make([]float32, frameCount*2)
 
 	opusBytes := make([]byte, 2048)
 
