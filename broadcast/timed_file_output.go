@@ -9,12 +9,27 @@ import (
 type TimedFileOutput struct {
 	RootDirectory string
 
+	fileDuration  time.Duration
 	currentFile   *SndFile
 	nextTimeBound time.Time
+
+	fileSampleCount         uint32
+	expectedFileSampleCount uint32
+}
+
+func (output *TimedFileOutput) SampleRate() int {
+	return 44100
 }
 
 func (output *TimedFileOutput) FileDuration() time.Duration {
-	return 5 * time.Minute
+	if output.fileDuration == 0 {
+		output.fileDuration = 5 * time.Minute
+	}
+	return output.fileDuration
+}
+
+func (output *TimedFileOutput) SetFileDuration(fileDuration time.Duration) {
+	output.fileDuration = fileDuration
 }
 
 func (output *TimedFileOutput) fileName(now time.Time, startFile bool) string {
@@ -28,6 +43,7 @@ func (output *TimedFileOutput) fileName(now time.Time, startFile bool) string {
 
 func (output *TimedFileOutput) updateNextTimeBound(now time.Time) {
 	output.nextTimeBound = now.Truncate(output.FileDuration()).Add(output.FileDuration())
+	output.expectedFileSampleCount = uint32(output.nextTimeBound.Sub(now).Seconds() * float64(output.SampleRate()))
 }
 
 func (output *TimedFileOutput) AudioOut(audio *Audio) {
@@ -40,9 +56,14 @@ func (output *TimedFileOutput) AudioOut(audio *Audio) {
 
 	if output.currentFile != nil {
 		if now.After(output.nextTimeBound) {
+			if output.fileSampleCount != output.expectedFileSampleCount {
+				Log.Printf("Missing samples in file %s : %d", output.currentFile.Path(), output.expectedFileSampleCount-output.fileSampleCount)
+			}
+
 			output.updateNextTimeBound(now)
 
 			Log.Printf("Close current file (%s)", output.currentFile.Path())
+
 			output.currentFile.Close()
 			output.currentFile = nil
 		}
@@ -52,7 +73,7 @@ func (output *TimedFileOutput) AudioOut(audio *Audio) {
 
 	if output.currentFile == nil {
 		var fileInfo Info
-		fileInfo.SetSampleRate(44100)
+		fileInfo.SetSampleRate(output.SampleRate())
 		fileInfo.SetChannels(2)
 		fileInfo.SetFormat(FORMAT_WAV | FORMAT_PCM_16)
 
@@ -65,8 +86,10 @@ func (output *TimedFileOutput) AudioOut(audio *Audio) {
 			Log.Printf("Can't open new file : %s", fileName)
 			return
 		}
+		output.fileSampleCount = 0
 		output.currentFile = file
 	}
 
+	output.fileSampleCount += uint32(audio.SampleCount())
 	output.currentFile.WriteFloat(audio.InterleavedFloats())
 }
