@@ -33,8 +33,12 @@ func main() {
 func backup(arguments []string) {
 	flags := flag.NewFlagSet("backup", flag.ExitOnError)
 
-	var fileDuration time.Duration
-	flags.DurationVar(&fileDuration, "file-duration", 5*time.Second, "Change file duration")
+	var fileDuration, bufferDuration time.Duration
+	var sampleRate int
+
+	flags.DurationVar(&fileDuration, "file-duration", 5*time.Minute, "Change file duration")
+	flags.DurationVar(&bufferDuration, "buffer-duration", 250*time.Millisecond, "Buffer duration")
+	flags.IntVar(&sampleRate, "sample-rate", 44100, "Sample rate")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] backup <root-directory>\n", os.Args[0])
@@ -50,12 +54,16 @@ func backup(arguments []string) {
 
 	var rootDirectory string = flags.Arg(0)
 
-	alsaInput := broadcast.AlsaInput{BufferSampleCount: 1024}
+	bufferSampleCount := int(float64(sampleRate) * bufferDuration.Seconds())
+	broadcast.Log.Debugf("Alsa bufferSampleCount: %d", bufferSampleCount)
+
+	alsaInput := broadcast.AlsaInput{BufferSampleCount: bufferSampleCount, SampleRate: sampleRate}
 	err := alsaInput.Init()
 	checkError(err)
 
 	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: rootDirectory}
 	timedFileOutput.SetFileDuration(fileDuration)
+	timedFileOutput.SetSampleRate(sampleRate)
 
 	channel := make(chan *broadcast.Audio, 100)
 	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
