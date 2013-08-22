@@ -10,6 +10,8 @@ type TimedFileOutput struct {
 	RootDirectory string
 
 	fileDuration  time.Duration
+	sampleRate    int
+
 	currentFile   *SndFile
 	nextTimeBound time.Time
 
@@ -18,7 +20,14 @@ type TimedFileOutput struct {
 }
 
 func (output *TimedFileOutput) SampleRate() int {
-	return 44100
+	if output.sampleRate == 0 {
+		output.sampleRate = 44100
+	}
+	return output.sampleRate
+}
+
+func (output *TimedFileOutput) SetSampleRate(sampleRate int) {
+	output.sampleRate = sampleRate
 }
 
 func (output *TimedFileOutput) FileDuration() time.Duration {
