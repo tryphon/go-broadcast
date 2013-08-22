@@ -34,7 +34,7 @@ func backup(arguments []string) {
 	flags := flag.NewFlagSet("backup", flag.ExitOnError)
 
 	var fileDuration time.Duration
-	flags.DurationVar(&fileDuration, "file-duration", 5 * time.Second, "Change file duration")
+	flags.DurationVar(&fileDuration, "file-duration", 5*time.Second, "Change file duration")
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] backup <root-directory>\n", os.Args[0])
