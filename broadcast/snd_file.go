@@ -57,6 +57,8 @@ func (file *SndFile) Path() string {
 }
 
 func (file *SndFile) Close() error {
+	file.WriteSync()
+
 	errorCode := C.sf_close(file.handle)
 	if errorCode != 0 {
 		return errors.New("Can't close file")
