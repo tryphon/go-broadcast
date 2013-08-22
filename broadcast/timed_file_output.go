@@ -47,7 +47,7 @@ func (output *TimedFileOutput) updateNextTimeBound(now time.Time) {
 }
 
 func (output *TimedFileOutput) AudioOut(audio *Audio) {
-	now := time.Now()
+	now := audio.Timestamp()
 	fileName := output.fileName(now, false)
 
 	if output.nextTimeBound.IsZero() {

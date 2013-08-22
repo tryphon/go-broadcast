@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"github.com/grd/vorbis"
+	"time"
 )
 
 type AudioHandler interface {
@@ -23,11 +24,14 @@ type Audio struct {
 	samples      [][]float32
 	channelCount int
 	sampleCount  int
+
+	timestamp time.Time
 }
 
 func NewAudio(sampleCount int, channelCount int) *Audio {
 	audio := &Audio{sampleCount: sampleCount, channelCount: channelCount}
 	audio.samples = make([][]float32, channelCount)
+	audio.timestamp = time.Now()
 	return audio
 }
 
@@ -45,6 +49,10 @@ func (audio *Audio) SampleCount() int {
 
 func (audio *Audio) ChannelCount() int {
 	return audio.channelCount
+}
+
+func (audio *Audio) Timestamp() time.Time {
+	return audio.timestamp
 }
 
 func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount int) {

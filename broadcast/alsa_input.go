@@ -65,11 +65,13 @@ func (input *AlsaInput) Read() (err error) {
 	}
 
 	if readBytes > 0 {
-		audio := Audio{}
+		sampleCount := readBytes / input.handle.FrameSize()
+
+		audio := NewAudio(sampleCount, input.handle.Channels)
 		audio.LoadPcmBytes(input.buffer, readBytes/input.handle.FrameSize(), input.handle.Channels)
 
 		if input.audioHandler != nil {
-			input.audioHandler.AudioOut(&audio)
+			input.audioHandler.AudioOut(audio)
 		}
 	}
 
