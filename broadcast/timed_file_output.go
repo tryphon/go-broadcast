@@ -57,7 +57,7 @@ func (output *TimedFileOutput) AudioOut(audio *Audio) {
 	if output.currentFile != nil {
 		if now.After(output.nextTimeBound) {
 			if output.fileSampleCount != output.expectedFileSampleCount {
-				Log.Printf("Missing samples in file %s : %d", output.currentFile.Path(), output.expectedFileSampleCount-output.fileSampleCount)
+				Log.Printf("Missing samples in file %s : %d", output.currentFile.Path(), int32(output.expectedFileSampleCount)-int32(output.fileSampleCount))
 			}
 
 			output.updateNextTimeBound(now)
