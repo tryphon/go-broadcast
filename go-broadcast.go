@@ -33,6 +33,9 @@ func main() {
 func backup(arguments []string) {
 	flags := flag.NewFlagSet("backup", flag.ExitOnError)
 
+	var fileDuration time.Duration
+	flags.DurationVar(&fileDuration, "file-duration", 5 * time.Second, "Change file duration")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] backup <root-directory>\n", os.Args[0])
 		flags.PrintDefaults()
@@ -47,24 +50,24 @@ func backup(arguments []string) {
 
 	var rootDirectory string = flags.Arg(0)
 
-	alsaInput := broadcast.AlsaInput{}
-
+	alsaInput := broadcast.AlsaInput{BufferSampleCount: 1024}
 	err := alsaInput.Init()
 	checkError(err)
 
 	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: rootDirectory}
-	// err = timedFileOutput.Init()
-	// checkError(err)
+	timedFileOutput.SetFileDuration(fileDuration)
 
-	audioHandler := &broadcast.SoundMeterAudioHandler{
-		Output: timedFileOutput,
-	}
+	channel := make(chan *broadcast.Audio, 100)
+	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+		channel <- audio
+	})
 	alsaInput.SetAudioHandler(audioHandler)
 
 	go alsaInput.Run()
 
 	for {
-		time.Sleep(2 * time.Second)
+		audio := <-channel
+		timedFileOutput.AudioOut(audio)
 	}
 }
 
