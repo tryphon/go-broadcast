@@ -31,7 +31,7 @@ type Audio struct {
 func NewAudio(sampleCount int, channelCount int) *Audio {
 	audio := &Audio{sampleCount: sampleCount, channelCount: channelCount}
 	audio.samples = make([][]float32, channelCount)
-	audio.timestamp = time.Now()
+	audio.timestamp = time.Now().UTC()
 	return audio
 }
 
