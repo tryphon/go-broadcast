@@ -63,8 +63,13 @@ func (file *SndFile) Close() error {
 	if errorCode != 0 {
 		return errors.New("Can't close file")
 	} else {
+		file.handle = nil
 		return nil
 	}
+}
+
+func (file *SndFile) IsClosed() bool {
+	return file.handle == nil
 }
 
 func (file *SndFile) WriteFloat(samples []float32) int64 {

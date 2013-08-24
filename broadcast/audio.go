@@ -55,6 +55,10 @@ func (audio *Audio) Timestamp() time.Time {
 	return audio.timestamp
 }
 
+func (audio *Audio) SetTimestamp(timestamp time.Time) {
+	audio.timestamp = timestamp
+}
+
 func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount int) {
 	audio.channelCount = channelCount
 	audio.sampleCount = sampleCount
