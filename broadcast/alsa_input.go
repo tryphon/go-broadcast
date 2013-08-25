@@ -9,11 +9,27 @@ type AlsaInput struct {
 	Device            string
 	SampleRate        int
 	BufferSampleCount int
+	SampleFormat      alsa.SampleFormat
 
 	audioHandler AudioHandler
 
 	bufferLength int
 	buffer       []byte
+}
+
+func ParseSampleFormat(definition string) (alsa.SampleFormat) {
+	switch definition {
+	case "s16le":
+		return alsa.SampleFormatS16LE
+	case "s32le":
+		return alsa.SampleFormatS32LE
+	case "s24_3be":
+		return alsa.SampleFormatS24_3BE
+	case "s32be":
+		return alsa.SampleFormatS32BE
+	default:
+		return 0
+	}
 }
 
 func (input *AlsaInput) Init() (err error) {
@@ -30,7 +46,7 @@ func (input *AlsaInput) Init() (err error) {
 		input.SampleRate = 44100
 	}
 
-	input.handle.SampleFormat = alsa.SampleFormatS16LE
+	input.handle.SampleFormat = input.SampleFormat
 	input.handle.SampleRate = input.SampleRate
 	input.handle.Channels = 2
 
@@ -38,6 +54,8 @@ func (input *AlsaInput) Init() (err error) {
 	if err != nil {
 		return err
 	}
+
+	Log.Debugf("Alsa SampleFormat: %d", input.handle.SampleFormat)
 
 	if input.BufferSampleCount == 0 {
 		input.BufferSampleCount = 1024

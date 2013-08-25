@@ -35,9 +35,10 @@ func backup(arguments []string) {
 
 	var fileDuration, bufferDuration time.Duration
 	var sampleRate int
-	var alsaDevice string
+	var alsaDevice, alsaSampleFormat string
 
 	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to record sound")
+	flags.StringVar(&alsaSampleFormat, "alsa-sample-format", "auto", "The sample format used to record sound (s16le, s32le, s32be)")
 	flags.DurationVar(&fileDuration, "file-duration", 5*time.Minute, "Change file duration")
 	flags.DurationVar(&bufferDuration, "buffer-duration", 250*time.Millisecond, "Buffer duration")
 	flags.IntVar(&sampleRate, "sample-rate", 44100, "Sample rate")
@@ -59,7 +60,7 @@ func backup(arguments []string) {
 	bufferSampleCount := int(float64(sampleRate) * bufferDuration.Seconds())
 	broadcast.Log.Debugf("Alsa bufferSampleCount: %d", bufferSampleCount)
 
-	alsaInput := broadcast.AlsaInput{Device: alsaDevice, BufferSampleCount: bufferSampleCount, SampleRate: sampleRate}
+	alsaInput := broadcast.AlsaInput{Device: alsaDevice, BufferSampleCount: bufferSampleCount, SampleRate: sampleRate, SampleFormat: broadcast.ParseSampleFormat(alsaSampleFormat)}
 	err := alsaInput.Init()
 	checkError(err)
 
