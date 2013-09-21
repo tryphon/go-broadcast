@@ -1,7 +1,7 @@
 package broadcast
 
 import (
-	alsa "github.com/Narsil/alsa-go"
+	alsa "github.com/tryphon/alsa-go"
 )
 
 type AlsaOutput struct {
