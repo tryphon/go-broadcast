@@ -26,12 +26,12 @@ func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) adjustmentFactor() int {
-	delta := pseudoBuffer.LimitSampleCount - pseudoBuffer.ThresholdSampleCount
+	delta := int(pseudoBuffer.LimitSampleCount) - int(pseudoBuffer.ThresholdSampleCount)
 	if delta > 0 {
-		return 1
+		return -1
 	}
 	if delta < 0 {
-		return -1
+		return +1
 	}
 	return 0
 }
@@ -57,9 +57,9 @@ func (pseudoBuffer *AdjustAudioBuffer) adjust() bool {
 	value := -math.Log(1-pseudoBuffer.fillRate()) / 5
 
 	result := value > probability
-	if result {
-		Log.Debugf("Fill Rate : %f, Value: %f, Probability: %f", pseudoBuffer.fillRate(), value, probability)
-	}
+	// if result {
+	// 	Log.Debugf("Fill Rate : %f, Value: %f, Probability: %f", pseudoBuffer.fillRate(), value, probability)
+	// }
 	return result
 }
 
