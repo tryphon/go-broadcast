@@ -10,6 +10,12 @@ type AdjustAudioBuffer struct {
 
 	LimitSampleCount     uint32
 	ThresholdSampleCount uint32
+
+	adjustmentSampleCount int64
+}
+
+func (pseudoBuffer *AdjustAudioBuffer) AdjustmentSampleCount() int64 {
+	return pseudoBuffer.adjustmentSampleCount * int64(pseudoBuffer.adjustmentFactor())
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
@@ -65,14 +71,15 @@ func (pseudoBuffer *AdjustAudioBuffer) adjust() bool {
 
 func (pseudoBuffer *AdjustAudioBuffer) logAdjustment(audio *Audio) *Audio {
 	if audio != nil {
-		Log.Printf("Adjustment : %d samples\n", pseudoBuffer.adjustmentFactor()*audio.SampleCount())
+		pseudoBuffer.adjustmentSampleCount += int64(audio.SampleCount())
+		// Log.Printf("Adjustment : %d samples\n", pseudoBuffer.adjustmentFactor()*audio.SampleCount())
 	}
 	return audio
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) Read() (audio *Audio) {
 	if pseudoBuffer.addAudio() && pseudoBuffer.adjust() {
-		return pseudoBuffer.logAdjustment(&Audio{sampleCount: 1024, channelCount: 2})
+		return pseudoBuffer.logAdjustment(NewAudio(1024, 2))
 	} else {
 		return pseudoBuffer.Buffer.Read()
 	}

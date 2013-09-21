@@ -220,20 +220,24 @@ func httpClient(arguments []string) {
 	highUnfillMaxSampleCount := uint32(highUnfillMax * float64(sampleRate))
 	highUnfillSampleCount := uint32(highUnfill * float64(sampleRate))
 
+  lowAdjustBuffer := &broadcast.AdjustAudioBuffer{
+		Buffer:               &broadcast.MemoryAudioBuffer{},
+		LimitSampleCount:     lowAdjustLimitSampleCount,
+		ThresholdSampleCount: lowAdjustThresholdSampleCount,
+	}
+
+	highAdjustBuffer := &broadcast.AdjustAudioBuffer{
+		Buffer: &broadcast.RefillAudioBuffer{
+			Buffer: lowAdjustBuffer,
+			MinSampleCount: lowRefillMinSampleCount,
+		},
+		LimitSampleCount:     highAdjustLimitSampleCount,
+		ThresholdSampleCount: highAdjustThresholdSampleCount,
+	}
+
 	audioBuffer := &broadcast.MutexAudioBuffer{
 		Buffer: &broadcast.UnfillAudioBuffer{
-			Buffer: &broadcast.AdjustAudioBuffer{
-				Buffer: &broadcast.RefillAudioBuffer{
-					Buffer: &broadcast.AdjustAudioBuffer{
-						Buffer:               &broadcast.MemoryAudioBuffer{},
-						LimitSampleCount:     lowAdjustLimitSampleCount,
-						ThresholdSampleCount: lowAdjustThresholdSampleCount,
-					},
-					MinSampleCount: lowRefillMinSampleCount,
-				},
-				LimitSampleCount:     highAdjustLimitSampleCount,
-				ThresholdSampleCount: highAdjustThresholdSampleCount,
-			},
+			Buffer: highAdjustBuffer,
 			MaxSampleCount:    highUnfillMaxSampleCount,
 			UnfillSampleCount: highUnfillSampleCount,
 		},
@@ -254,7 +258,7 @@ func httpClient(arguments []string) {
 		go func() {
 			for {
 				time.Sleep(statusLoop)
-				broadcast.Log.Debugf("SampleCount: %d", audioBuffer.SampleCount())
+				broadcast.Log.Debugf("SampleCount: %d, Low Adjustment: %d, High Adjustment: %d", audioBuffer.SampleCount(), lowAdjustBuffer.AdjustmentSampleCount(), highAdjustBuffer.AdjustmentSampleCount())
 			}
 		}()
 	}
