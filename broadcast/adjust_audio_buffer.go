@@ -72,7 +72,7 @@ func (pseudoBuffer *AdjustAudioBuffer) logAdjustment(audio *Audio) *Audio {
 
 func (pseudoBuffer *AdjustAudioBuffer) Read() (audio *Audio) {
 	if pseudoBuffer.addAudio() && pseudoBuffer.adjust() {
-		return pseudoBuffer.logAdjustment(&Audio{sampleCount: 512, channelCount: 2})
+		return pseudoBuffer.logAdjustment(&Audio{sampleCount: 1024, channelCount: 2})
 	} else {
 		return pseudoBuffer.Buffer.Read()
 	}

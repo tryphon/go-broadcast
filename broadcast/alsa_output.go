@@ -1,9 +1,7 @@
 package broadcast
 
 import (
-	"fmt"
 	alsa "github.com/Narsil/alsa-go"
-	"os"
 )
 
 type AlsaOutput struct {
@@ -41,21 +39,16 @@ func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Can't write alsa buffer ", err.Error(), "\n")
+		Log.Debugf("Can't write alsa buffer: %v", err.Error())
 		return
 	}
 
 	wroteSamples := int64(alsaWriteLength / len(pcmBytes) * audio.sampleCount)
-	// Log.Debugf("wrote %d samples in alsa\n", wroteSamples)
 	alsa.sampleCount += wroteSamples
 
 	if alsaWriteLength != len(pcmBytes) {
-		fmt.Fprintf(os.Stderr, "Did not write whole alsa buffer (Wrote %v, expected %v)\n", alsaWriteLength, len(pcmBytes))
+		Log.Debugf("Did not write whole alsa buffer (Wrote %v, expected %v)", alsaWriteLength, len(pcmBytes))
 	}
-
-	// Log.Debugf("%v alsa sampleCount : %d\n", time.Now(), alsa.sampleCount)
-
-	// Log.Debugf("wrote %d bytes in alsa\n", alsaWriteLength)
 }
 
 func (alsa *AlsaOutput) SampleCount() int64 {
