@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	alsa "github.com/tryphon/alsa-go"
+	"time"
 )
 
 type AlsaOutput struct {
@@ -35,11 +36,13 @@ func (output *AlsaOutput) Init() error {
 }
 
 func (alsa *AlsaOutput) AudioOut(audio *Audio) {
-	pcmBytes := audio.PcmBytes()
+	for alsa.Delay() < 0 {
+		Log.Debugf("Alsa delay is negative (%d), waiting for better conditions", alsa.Delay())
+		time.Sleep(time.Second)
+		// alsa.handle.Wait(250)
+	}
 
-	// alsaAvailable, _ := alsa.handle.AvailUpdate()
-	// alsaDelay, _ := alsa.handle.Delay()
-	// fmt.Printf("available: %d, delay: %d\n", alsaAvailable, alsaDelay)
+	pcmBytes := audio.PcmBytes()
 
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
 	if err != nil {
