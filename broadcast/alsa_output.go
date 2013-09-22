@@ -37,6 +37,10 @@ func (output *AlsaOutput) Init() error {
 func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 	pcmBytes := audio.PcmBytes()
 
+	// alsaAvailable, _ := alsa.handle.AvailUpdate()
+	// alsaDelay, _ := alsa.handle.Delay()
+	// fmt.Printf("available: %d, delay: %d\n", alsaAvailable, alsaDelay)
+
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
 	if err != nil {
 		Log.Debugf("Can't write alsa buffer: %v", err.Error())
@@ -53,4 +57,9 @@ func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 
 func (alsa *AlsaOutput) SampleCount() int64 {
 	return alsa.sampleCount
+}
+
+func (alsa *AlsaOutput) Delay() (delay int) {
+	delay, _ = alsa.handle.Delay()
+	return delay
 }

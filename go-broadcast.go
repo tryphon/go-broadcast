@@ -258,10 +258,10 @@ func httpClient(arguments []string) {
 
 	if statusLoop > 0 {
 		go func() {
-			output := "SampleCount: %d, Low Adjustment: %d, High Adjustment: %d, Alsa: %d, Vorbis: %d"
+			output := "SampleCount: %d, Low Adjustment: %d, High Adjustment: %d, Alsa SampleCount: %d, Alsa delay: %d, Vorbis: %d"
 			for {
 				time.Sleep(statusLoop)
-				broadcast.Log.Debugf(output, audioBuffer.SampleCount(), lowAdjustBuffer.AdjustmentSampleCount(), highAdjustBuffer.AdjustmentSampleCount(), alsaOutput.SampleCount(), httpInput.SampleCount())
+				broadcast.Log.Debugf(output, audioBuffer.SampleCount(), lowAdjustBuffer.AdjustmentSampleCount(), highAdjustBuffer.AdjustmentSampleCount(), alsaOutput.SampleCount(), alsaOutput.Delay(), httpInput.SampleCount())
 			}
 		}()
 	}
