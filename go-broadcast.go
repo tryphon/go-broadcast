@@ -24,6 +24,8 @@ func main() {
 		udpServer(os.Args[2:])
 	case "backup":
 		backup(os.Args[2:])
+	case "loopback":
+		loopback(os.Args[2:])
 	default:
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|backup|udpclient|udpserver <url>\n", os.Args[0])
 		os.Exit(1)
@@ -280,6 +282,60 @@ func httpClient(arguments []string) {
 			}
 		}
 
+		alsaOutput.AudioOut(audio)
+	}
+}
+
+func loopback(arguments []string) {
+	flags := flag.NewFlagSet("httpclient", flag.ExitOnError)
+
+	var bufferDuration time.Duration
+	var inputDevice, outputDevice string
+	// var inputSampleFormat, outputSampleFormat string
+	var sampleRate int
+
+	flags.StringVar(&inputDevice, "input-device", "default", "The alsa device used to capture sound")
+	// flags.StringVar(&inputSampleFormat, "input-sample-format", "auto", "The sample format used to capture sound (s16le, s32le, s32be)")
+
+	flags.StringVar(&outputDevice, "output-device", "default", "The alsa device used to play sound")
+	// flags.StringVar(&outputSampleFormat, "output-sample-format", "auto", "The sample format used to play sound (s16le, s32le, s32be)")
+
+	flags.DurationVar(&bufferDuration, "buffer-duration", 250*time.Millisecond, "Buffer duration")
+
+	flags.IntVar(&sampleRate, "sample-rate", 44100, "Sample rate")
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] loopback\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	flags.Parse(arguments)
+
+	bufferSampleCount := int(float64(sampleRate) * bufferDuration.Seconds())
+	broadcast.Log.Debugf("Alsa bufferSampleCount: %d", bufferSampleCount)
+
+	alsaInput := broadcast.AlsaInput{Device: inputDevice, SampleRate: sampleRate, BufferSampleCount: bufferSampleCount, SampleFormat: broadcast.ParseSampleFormat("s16le")}
+	err := alsaInput.Init()
+	checkError(err)
+	
+	alsaOutput := broadcast.AlsaOutput{Device: outputDevice, SampleRate: sampleRate}
+	err = alsaOutput.Init()
+	checkError(err)
+
+	channel := make(chan *broadcast.Audio, 100)
+	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+		// fmt.Fprintf(os.Stderr, "read %d\n", audio.SampleCount())
+		channel <- audio
+	})
+	alsaInput.SetAudioHandler(audioHandler)
+
+	go alsaInput.Run()
+
+	time.Sleep(bufferDuration * 2)
+
+	for {
+		audio := <-channel
+		// fmt.Fprintf(os.Stderr, "write %d\n", audio.SampleCount())
 		alsaOutput.AudioOut(audio)
 	}
 }
