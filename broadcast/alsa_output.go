@@ -36,6 +36,8 @@ func (output *AlsaOutput) Init() error {
 }
 
 func (alsa *AlsaOutput) AudioOut(audio *Audio) {
+	alsa.handle.AvailUpdate()
+	
 	for alsa.Delay() < 0 {
 		Log.Debugf("Alsa delay is negative (%d), waiting for better conditions", alsa.Delay())
 		time.Sleep(time.Second)
