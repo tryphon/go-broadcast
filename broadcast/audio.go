@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"github.com/grd/vorbis"
 	"time"
+	"io"
+	alsa "github.com/tryphon/alsa-go"
 )
 
 type AudioHandler interface {
@@ -59,7 +61,7 @@ func (audio *Audio) SetTimestamp(timestamp time.Time) {
 	audio.timestamp = timestamp
 }
 
-func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount int) {
+func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount int, sampleFormat alsa.SampleFormat) {
 	audio.channelCount = channelCount
 	audio.sampleCount = sampleCount
 
@@ -70,15 +72,60 @@ func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount 
 
 	buffer := bytes.NewBuffer(pcmBytes)
 
+	var err error
+
+	switch sampleFormat {
+	case alsa.SampleFormatS16LE: err = audio.readPcm16BitsBuffer(buffer, sampleCount, channelCount)
+	case alsa.SampleFormatS32LE: err = audio.readPcm32BitsBuffer(buffer, sampleCount, channelCount)
+	default: Log.Printf("Unsupported sample format: %s", sampleFormat)
+	}
+
+	if err != nil {
+		Log.Printf("Can't read correctly pcm buffer: %s", err.Error())
+	}
+}
+
+func (audio *Audio) readPcm16BitsBuffer(buffer io.Reader, sampleCount int, channelCount int) error {
 	for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
 		for channel := 0; channel < channelCount; channel++ {
 			var pcmSample int16
 			err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
 			if err != nil {
-				Log.Printf("Can't read correctly pcm buffer: %s", err.Error())
+				return err
 			}
-			audio.samples[channel][samplePosition] = pcmSampleToFloat(pcmSample)
+			audio.samples[channel][samplePosition] = pcmSample16BitsToFloat(pcmSample)
 		}
+	}
+	return nil
+}
+
+func pcmSample16BitsToFloat(pcmSample int16) float32 {
+	if pcmSample != -32768 {
+		return float32(pcmSample) / 32767
+	} else {
+		return -1
+	}
+}
+
+func (audio *Audio) readPcm32BitsBuffer(buffer io.Reader, sampleCount int, channelCount int) error {
+	for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
+		for channel := 0; channel < channelCount; channel++ {
+			var pcmSample int32
+			err := binary.Read(buffer, binary.LittleEndian, &pcmSample)
+			if err != nil {
+				return err
+			}
+			audio.samples[channel][samplePosition] = pcmSample32BitsToFloat(pcmSample)
+		}
+	}
+	return nil
+}
+
+func pcmSample32BitsToFloat(pcmSample int32) float32 {
+	if pcmSample != -2147483648 {
+		return float32(pcmSample) / 2147483648
+	} else {
+		return -1
 	}
 }
 
@@ -93,14 +140,6 @@ func (audio *Audio) LoadPcmFloats(pcmArray ***float32, sampleCount int, channelC
 		for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
 			audio.samples[channel][samplePosition] = vorbis.PcmArrayHelper(*pcmArray, channel, samplePosition)
 		}
-	}
-}
-
-func pcmSampleToFloat(pcmSample int16) float32 {
-	if pcmSample != -32768 {
-		return float32(pcmSample) / 32767
-	} else {
-		return -1
 	}
 }
 

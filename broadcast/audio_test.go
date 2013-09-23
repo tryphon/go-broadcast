@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"testing"
+	alsa "github.com/tryphon/alsa-go"
 )
 
 func TestAudio_floatSamplesToBytes(t *testing.T) {
@@ -25,7 +26,7 @@ func TestAudio_floatSamplesToBytes(t *testing.T) {
 	}
 }
 
-func TestAudio_pcmSampleToFloat(t *testing.T) {
+func TestAudio_pcmSample16BitsToFloat(t *testing.T) {
 	var conditions = []struct {
 		pcmSample   int16
 		floatSample float32
@@ -36,7 +37,25 @@ func TestAudio_pcmSampleToFloat(t *testing.T) {
 	}
 
 	for i, condition := range conditions {
-		floatSample := pcmSampleToFloat(condition.pcmSample)
+		floatSample := pcmSample16BitsToFloat(condition.pcmSample)
+		if floatSample != condition.floatSample {
+			t.Errorf("#%d: Wrong float value for %v:\n got: %v\nwant: %v", i, condition.pcmSample, floatSample, condition.floatSample)
+		}
+	}
+}
+
+func TestAudio_pcmSample32BitsToFloat(t *testing.T) {
+	var conditions = []struct {
+		pcmSample   int32
+		floatSample float32
+	}{
+		{2147483647, 1},
+		{0, 0},
+		{-2147483648, -1},
+	}
+
+	for i, condition := range conditions {
+		floatSample := pcmSample32BitsToFloat(condition.pcmSample)
 		if floatSample != condition.floatSample {
 			t.Errorf("#%d: Wrong float value for %v:\n got: %v\nwant: %v", i, condition.pcmSample, floatSample, condition.floatSample)
 		}
@@ -104,7 +123,7 @@ func TestAudio_PcmBytes_ChannelContent(t *testing.T) {
 
 func TestAudio_LoadPcmBytes(t *testing.T) {
 	audio := Audio{}
-	audio.LoadPcmBytes([]byte{255, 127, 0, 0, 0, 0, 1, 128}, 2, 2)
+	audio.LoadPcmBytes([]byte{255, 127, 0, 0, 0, 0, 1, 128}, 2, 2, alsa.SampleFormatS16LE)
 
 	if audio.SampleCount() != 2 {
 		t.Errorf("Wrong sample count value:\n got: %d\nwant: %d", audio.SampleCount(), 2)
