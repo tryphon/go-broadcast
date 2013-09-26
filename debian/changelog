@@ -1,3 +1,9 @@
+go-broadcast (0.10) unstable; urgency=low
+
+  * New upstream release
+
+ -- Alban Peignier <alban@tryphon.eu>  Thu, 26 Sep 2013 20:09:40 +0200
+
 go-broadcast (0.9) unstable; urgency=low
 
   * New upstream release

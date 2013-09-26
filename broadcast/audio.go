@@ -3,7 +3,7 @@ package broadcast
 import (
 	"bytes"
 	"encoding/binary"
-	"github.com/grd/vorbis"
+	vorbis "github.com/tryphon/go-vorbis"
 	"time"
 	"io"
 	alsa "github.com/tryphon/alsa-go"

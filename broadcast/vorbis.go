@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"github.com/grd/ogg"
-	"github.com/grd/vorbis"
+	vorbis "github.com/tryphon/go-vorbis"
 )
 
 type VorbisDecoder struct {
