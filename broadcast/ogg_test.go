@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"fmt"
-	"github.com/grd/ogg"
+	ogg "github.com/tryphon/go-ogg"
 	"os"
 	"testing"
 )

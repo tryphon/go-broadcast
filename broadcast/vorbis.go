@@ -1,7 +1,7 @@
 package broadcast
 
 import (
-	"github.com/grd/ogg"
+	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
 )
 
