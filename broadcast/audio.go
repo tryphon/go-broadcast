@@ -3,10 +3,10 @@ package broadcast
 import (
 	"bytes"
 	"encoding/binary"
-	vorbis "github.com/tryphon/go-vorbis"
-	"time"
-	"io"
 	alsa "github.com/tryphon/alsa-go"
+	vorbis "github.com/tryphon/go-vorbis"
+	"io"
+	"time"
 )
 
 type AudioHandler interface {
@@ -75,9 +75,12 @@ func (audio *Audio) LoadPcmBytes(pcmBytes []byte, sampleCount int, channelCount 
 	var err error
 
 	switch sampleFormat {
-	case alsa.SampleFormatS16LE: err = audio.readPcm16BitsBuffer(buffer, sampleCount, channelCount)
-	case alsa.SampleFormatS32LE: err = audio.readPcm32BitsBuffer(buffer, sampleCount, channelCount)
-	default: Log.Printf("Unsupported sample format: %s", sampleFormat)
+	case alsa.SampleFormatS16LE:
+		err = audio.readPcm16BitsBuffer(buffer, sampleCount, channelCount)
+	case alsa.SampleFormatS32LE:
+		err = audio.readPcm32BitsBuffer(buffer, sampleCount, channelCount)
+	default:
+		Log.Printf("Unsupported sample format: %s", sampleFormat)
 	}
 
 	if err != nil {

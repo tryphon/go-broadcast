@@ -3,8 +3,8 @@ package broadcast
 import (
 	"bytes"
 	"encoding/binary"
-	"testing"
 	alsa "github.com/tryphon/alsa-go"
+	"testing"
 )
 
 func TestAudio_floatSamplesToBytes(t *testing.T) {

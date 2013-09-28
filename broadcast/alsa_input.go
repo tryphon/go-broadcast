@@ -17,7 +17,7 @@ type AlsaInput struct {
 	buffer       []byte
 }
 
-func ParseSampleFormat(definition string) (alsa.SampleFormat) {
+func ParseSampleFormat(definition string) alsa.SampleFormat {
 	switch definition {
 	case "s16le":
 		return alsa.SampleFormatS16LE

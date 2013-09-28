@@ -3,11 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
-	"time"
 	"log"
-	"runtime/pprof"
+	"os"
 	"os/signal"
+	"runtime/pprof"
+	"time"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
@@ -213,41 +213,41 @@ func httpClient(arguments []string) {
 	}
 
 	if cpuProfile != "" {
-      f, err := os.Create(cpuProfile)
-      if err != nil {
-          log.Fatal(err)
-      }
-      pprof.StartCPUProfile(f)
-      defer pprof.StopCPUProfile()
+		f, err := os.Create(cpuProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 
-      c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
-			go func() {
-			  for sig := range c {
-			  	broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
-			    pprof.StopCPUProfile()
-			    os.Exit(0)
-			  }
-			}()
-  }
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			for sig := range c {
+				broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
+				pprof.StopCPUProfile()
+				os.Exit(0)
+			}
+		}()
+	}
 
-  if memProfile != "" {
-      f, err := os.Create(memProfile)
-      if err != nil {
-          log.Fatal(err)
-      }
+	if memProfile != "" {
+		f, err := os.Create(memProfile)
+		if err != nil {
+			log.Fatal(err)
+		}
 
-      c := make(chan os.Signal, 1)
-			signal.Notify(c, os.Interrupt)
-			go func() {
-			  for sig := range c {
-			  	broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
-		      pprof.WriteHeapProfile(f)
-		      f.Close()
-			    os.Exit(0)
-			  }
-			}()
-  }
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			for sig := range c {
+				broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
+				pprof.WriteHeapProfile(f)
+				f.Close()
+				os.Exit(0)
+			}
+		}()
+	}
 
 	httpInput := broadcast.HttpInput{Url: flags.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError, Username: httpUsername, Password: httpPassword}
 	err := httpInput.Init()
@@ -266,7 +266,7 @@ func httpClient(arguments []string) {
 	highUnfillMaxSampleCount := uint32(highUnfillMax * float64(sampleRate))
 	highUnfillSampleCount := uint32(highUnfill * float64(sampleRate))
 
-  lowAdjustBuffer := &broadcast.AdjustAudioBuffer{
+	lowAdjustBuffer := &broadcast.AdjustAudioBuffer{
 		Buffer:               &broadcast.MemoryAudioBuffer{},
 		LimitSampleCount:     lowAdjustLimitSampleCount,
 		ThresholdSampleCount: lowAdjustThresholdSampleCount,
@@ -274,7 +274,7 @@ func httpClient(arguments []string) {
 
 	highAdjustBuffer := &broadcast.AdjustAudioBuffer{
 		Buffer: &broadcast.RefillAudioBuffer{
-			Buffer: lowAdjustBuffer,
+			Buffer:         lowAdjustBuffer,
 			MinSampleCount: lowRefillMinSampleCount,
 		},
 		LimitSampleCount:     highAdjustLimitSampleCount,
@@ -283,7 +283,7 @@ func httpClient(arguments []string) {
 
 	audioBuffer := &broadcast.MutexAudioBuffer{
 		Buffer: &broadcast.UnfillAudioBuffer{
-			Buffer: highAdjustBuffer,
+			Buffer:            highAdjustBuffer,
 			MaxSampleCount:    highUnfillMaxSampleCount,
 			UnfillSampleCount: highUnfillSampleCount,
 		},
