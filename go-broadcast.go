@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"log"
+	"runtime/pprof"
+	"os/signal"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 )
@@ -193,6 +196,10 @@ func httpClient(arguments []string) {
 	flags.StringVar(&httpUsername, "http-username", "", "Username used for http authentification")
 	flags.StringVar(&httpPassword, "http-password", "", "Password used for http authentification")
 
+	var cpuProfile, memProfile string
+	flags.StringVar(&cpuProfile, "cpuprofile", "", "Write cpu profile to file")
+	flags.StringVar(&memProfile, "memprofile", "", "Write memory profile to this file")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient <url>\n", os.Args[0])
 		flags.PrintDefaults()
@@ -204,6 +211,43 @@ func httpClient(arguments []string) {
 		flag.Usage()
 		os.Exit(1)
 	}
+
+	if cpuProfile != "" {
+      f, err := os.Create(cpuProfile)
+      if err != nil {
+          log.Fatal(err)
+      }
+      pprof.StartCPUProfile(f)
+      defer pprof.StopCPUProfile()
+
+      c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt)
+			go func() {
+			  for sig := range c {
+			  	broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
+			    pprof.StopCPUProfile()
+			    os.Exit(0)
+			  }
+			}()
+  }
+
+  if memProfile != "" {
+      f, err := os.Create(memProfile)
+      if err != nil {
+          log.Fatal(err)
+      }
+
+      c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt)
+			go func() {
+			  for sig := range c {
+			  	broadcast.Log.Debugf("Receive interrupt signal: %v", sig)
+		      pprof.WriteHeapProfile(f)
+		      f.Close()
+			    os.Exit(0)
+			  }
+			}()
+  }
 
 	httpInput := broadcast.HttpInput{Url: flags.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError, Username: httpUsername, Password: httpPassword}
 	err := httpInput.Init()
@@ -317,7 +361,7 @@ func loopback(arguments []string) {
 	alsaInput := broadcast.AlsaInput{Device: inputDevice, SampleRate: sampleRate, BufferSampleCount: bufferSampleCount, SampleFormat: broadcast.ParseSampleFormat("s16le")}
 	err := alsaInput.Init()
 	checkError(err)
-	
+
 	alsaOutput := broadcast.AlsaOutput{Device: outputDevice, SampleRate: sampleRate}
 	err = alsaOutput.Init()
 	checkError(err)
