@@ -75,7 +75,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 		}
 
 		if packetOutResult < 0 {
-			Log.Debugf("PacketOutResult: %d\n", packetOutResult)
+			Log.Debugf("PacketOutResult: %d", packetOutResult)
 			// the second page of a Ogg stream seems to return a nice -1 ...
 			// 	return false
 		}

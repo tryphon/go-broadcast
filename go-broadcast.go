@@ -200,6 +200,9 @@ func httpClient(arguments []string) {
 	flags.StringVar(&cpuProfile, "cpuprofile", "", "Write cpu profile to file")
 	flags.StringVar(&memProfile, "memprofile", "", "Write memory profile to this file")
 
+	flags.BoolVar(&broadcast.Log.Debug, "debug", false, "Enable debug messages")
+	flags.BoolVar(&broadcast.Log.Syslog, "syslog", false, "Redirect messages to syslog")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient <url>\n", os.Args[0])
 		flags.PrintDefaults()
@@ -248,6 +251,8 @@ func httpClient(arguments []string) {
 			}
 		}()
 	}
+
+
 
 	httpInput := broadcast.HttpInput{Url: flags.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError, Username: httpUsername, Password: httpPassword}
 	err := httpInput.Init()

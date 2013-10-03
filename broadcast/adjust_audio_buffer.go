@@ -27,7 +27,7 @@ func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
 
 	rawRate := (float64(sampleCount) - float64(pseudoBuffer.ThresholdSampleCount)) / (float64(pseudoBuffer.LimitSampleCount) - float64(pseudoBuffer.ThresholdSampleCount))
 
-	// Log.Debugf("SampleCount : %d, ThresholdSampleCount: %d, LimitSampleCount: %d, RawRate: %f\n", sampleCount, pseudoBuffer.ThresholdSampleCount, pseudoBuffer.LimitSampleCount, rawRate)
+	// Log.Debugf("SampleCount : %d, ThresholdSampleCount: %d, LimitSampleCount: %d, RawRate: %f", sampleCount, pseudoBuffer.ThresholdSampleCount, pseudoBuffer.LimitSampleCount, rawRate)
 	return math.Min(1, math.Max(0, rawRate))
 }
 
