@@ -5,6 +5,7 @@ import (
 	"io"
 	"log/syslog"
 	"os"
+	"time"
 )
 
 type Logger struct {
@@ -25,15 +26,16 @@ type StdWriter struct {
 }
 
 func (writer *StdWriter) Debug(message string) error {
-	fmt.Fprintln(writer.Out, message)
-	return nil
+	return writer.output(message)
 }
 func (writer *StdWriter) Info(message string) error {
-	fmt.Fprintln(writer.Out, message)
-	return nil
+	return writer.output(message)
 }
 func (writer *StdWriter) Emerg(message string) error {
-	fmt.Fprintln(writer.Out, message)
+	return writer.output(message)
+}
+func (writer *StdWriter) output(message string) error {
+	fmt.Fprintln(writer.Out, time.Now(), message)
 	return nil
 }
 
