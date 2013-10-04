@@ -1,8 +1,22 @@
 package broadcast
 
 /*
-#cgo LDFLAGS: -lopus
 #include <opus/opus.h>
+
+// Helpers to use opus_encoder_ctl
+int opus_encoder_ctl_set_birate(OpusEncoder *enc, opus_int32 bitrate) {
+  return opus_encoder_ctl(enc, OPUS_SET_BITRATE(bitrate));
+}
+
+int opus_encoder_ctl_set_complexity(OpusEncoder *enc, opus_int32 complexity) {
+  return opus_encoder_ctl(enc, OPUS_SET_COMPLEXITY(complexity));
+}
+
+int opus_encoder_ctl_set_signal(OpusEncoder *enc, opus_int32 signal) {
+  return opus_encoder_ctl(enc, OPUS_SET_SIGNAL(signal));
+}
+
+#cgo LDFLAGS: -lopus
 */
 import "C"
 
@@ -31,6 +45,10 @@ func OpusEncoderCreate() (*OpusEncoder, error) {
 	if int(cError) != OPUS_OK {
 		return nil, errors.New(fmt.Sprintf("Can't create Opus encoder: %d", int(cError)))
 	}
+
+	C.opus_encoder_ctl_set_birate(handle, 512000)
+	C.opus_encoder_ctl_set_complexity(handle, 10)
+	C.opus_encoder_ctl_set_signal(handle, C.OPUS_SIGNAL_MUSIC)
 
 	encoder.handle = handle
 	return encoder, nil
