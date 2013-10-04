@@ -153,20 +153,17 @@ func udpServer(arguments []string) {
 	err = udpInput.Init()
 	checkError(err)
 
-	audioHandler := &broadcast.ResizeAudio{
-		Output: &broadcast.SoundMeterAudioHandler{
-			Output: alsaOutput,
-		},
-		SampleCount:  1024,
-		ChannelCount: 2,
-	}
-
+	channel := make(chan *broadcast.Audio, 100)
+	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
+		channel <- audio
+	})
 	udpInput.SetAudioHandler(audioHandler)
 
 	go udpInput.Run()
 
 	for {
-		time.Sleep(2 * time.Second)
+		audio := <-channel
+		alsaOutput.AudioOut(audio)
 	}
 }
 
