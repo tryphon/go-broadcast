@@ -49,7 +49,7 @@ func TestOpus_encode(t *testing.T) {
 	// defer opusFile.Close()
 	// opusBuffer.WriteTo(opusFile)
 
-	var expectedHash uint32 = 2819702099
+	var expectedHash uint32 = 928466767
 	hash := crc32.NewIEEE()
 	opusBuffer.WriteTo(hash)
 	if hash.Sum32() != expectedHash {
