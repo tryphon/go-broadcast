@@ -168,13 +168,14 @@ func udpServer(arguments []string) {
 }
 
 func httpClient(arguments []string) {
-	var sampleRate uint = 44100
+	var sampleRate int = 44100
 
 	flags := flag.NewFlagSet("httpclient", flag.ExitOnError)
 
 	var lowAdjustLimit, lowAdjustThreshold, lowRefillMin, highAdjustLimit, highAdjustThreshold, highUnfillMax, highUnfill float64
 	var statusLoop, httpReadTimeout, httpWaitOnError time.Duration
 	var httpUsername, httpPassword string
+	var alsaDevice /*, alsaSampleFormat */ string
 
 	flags.Float64Var(&lowAdjustLimit, "low-adjust-limit", 0, "Limit of low adjust buffer (in seconds)")
 	flags.Float64Var(&lowAdjustThreshold, "low-adjust-threshold", 3, "Limit of low adjust buffer (in seconds)")
@@ -192,6 +193,9 @@ func httpClient(arguments []string) {
 
 	flags.StringVar(&httpUsername, "http-username", "", "Username used for http authentification")
 	flags.StringVar(&httpPassword, "http-password", "", "Password used for http authentification")
+
+	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to record sound")
+	// flags.StringVar(&alsaSampleFormat, "alsa-sample-format", "auto", "The sample format used to record sound (s16le, s32le, s32be)")
 
 	var cpuProfile, memProfile string
 	flags.StringVar(&cpuProfile, "cpuprofile", "", "Write cpu profile to file")
@@ -249,13 +253,11 @@ func httpClient(arguments []string) {
 		}()
 	}
 
-
-
 	httpInput := broadcast.HttpInput{Url: flags.Arg(0), ReadTimeout: httpReadTimeout, WaitOnError: httpWaitOnError, Username: httpUsername, Password: httpPassword}
 	err := httpInput.Init()
 	checkError(err)
 
-	alsaOutput := broadcast.AlsaOutput{}
+	alsaOutput := broadcast.AlsaOutput{Device: alsaDevice, SampleRate: sampleRate}
 
 	err = alsaOutput.Init()
 	checkError(err)
