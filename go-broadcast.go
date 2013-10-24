@@ -197,6 +197,9 @@ func httpClient(arguments []string) {
 	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to record sound")
 	// flags.StringVar(&alsaSampleFormat, "alsa-sample-format", "auto", "The sample format used to record sound (s16le, s32le, s32be)")
 
+	var fixedRateTolerance float64
+	flags.Float64Var(&fixedRateTolerance, "sample-rate-tolerance", 1, "Tolerance on sample format (0 is no tolerance, 1 is no fixed sample format)")
+
 	var cpuProfile, memProfile string
 	flags.StringVar(&cpuProfile, "cpuprofile", "", "Write cpu profile to file")
 	flags.StringVar(&memProfile, "memprofile", "", "Write memory profile to this file")
@@ -258,6 +261,18 @@ func httpClient(arguments []string) {
 	checkError(err)
 
 	alsaOutput := broadcast.AlsaOutput{Device: alsaDevice, SampleRate: sampleRate}
+	var outputHandler broadcast.AudioHandler = &alsaOutput
+
+	if fixedRateTolerance > 0 && fixedRateTolerance < 1 {
+		fixedRateOutput := broadcast.FixedRateAudioHandler{
+			Output: &alsaOutput,
+			SampleRate: uint(sampleRate),
+			Tolerance: fixedRateTolerance,
+		}
+
+		broadcast.Log.Debugf("Fixed Rate Output with %d%% tolerance", int(fixedRateTolerance * 100))
+		outputHandler = &fixedRateOutput
+	}
 
 	err = alsaOutput.Init()
 	checkError(err)
@@ -330,7 +345,7 @@ func httpClient(arguments []string) {
 			}
 		}
 
-		alsaOutput.AudioOut(audio)
+		outputHandler.AudioOut(audio)
 	}
 }
 
