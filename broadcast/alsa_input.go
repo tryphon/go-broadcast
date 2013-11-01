@@ -9,27 +9,14 @@ type AlsaInput struct {
 	Device            string
 	SampleRate        int
 	BufferSampleCount int
-	SampleFormat      alsa.SampleFormat
+	SampleFormat      SampleFormat
 
 	audioHandler AudioHandler
 
 	bufferLength int
 	buffer       []byte
-}
 
-func ParseSampleFormat(definition string) alsa.SampleFormat {
-	switch definition {
-	case "s16le":
-		return alsa.SampleFormatS16LE
-	case "s32le":
-		return alsa.SampleFormatS32LE
-	case "s24_3be":
-		return alsa.SampleFormatS24_3BE
-	case "s32be":
-		return alsa.SampleFormatS32BE
-	default:
-		return 0
-	}
+	decoder *InterleavedAudioEncoder
 }
 
 func (input *AlsaInput) Init() (err error) {
@@ -46,7 +33,9 @@ func (input *AlsaInput) Init() (err error) {
 		input.SampleRate = 44100
 	}
 
-	input.handle.SampleFormat = input.SampleFormat
+	if input.SampleFormat != nil {
+		input.handle.SampleFormat = ToAlsaSampleFormat(input.SampleFormat)
+	}
 	input.handle.SampleRate = input.SampleRate
 	input.handle.Channels = 2
 
@@ -55,7 +44,10 @@ func (input *AlsaInput) Init() (err error) {
 		return err
 	}
 
-	Log.Debugf("Alsa SampleFormat: %d", input.handle.SampleFormat)
+	input.SampleFormat = FromAlsaSampleFormat(input.handle.SampleFormat)
+	input.decoder = &InterleavedAudioEncoder{SampleFormat: input.SampleFormat, ChannelCount: input.handle.Channels}
+
+	Log.Debugf("Alsa SampleFormat: %v", input.SampleFormat.Name())
 
 	if input.BufferSampleCount == 0 {
 		input.BufferSampleCount = 1024
@@ -82,15 +74,13 @@ func (input *AlsaInput) Read() (err error) {
 		Log.Printf("Did not read whole buffer (Read %v, expected %v)\n", readBytes, input.bufferLength)
 	}
 
-	if readBytes > 0 {
-		sampleCount := readBytes / input.handle.FrameSize()
-
-		audio := NewAudio(sampleCount, input.handle.Channels)
-		audio.LoadPcmBytes(input.buffer, readBytes/input.handle.FrameSize(), input.handle.Channels, input.handle.SampleFormat)
-
-		if input.audioHandler != nil {
-			input.audioHandler.AudioOut(audio)
+	if readBytes > 0 && input.audioHandler != nil {
+		audio, err := input.decoder.Decode(input.buffer[:readBytes])
+		if err != nil {
+			return err
 		}
+
+		input.audioHandler.AudioOut(audio)
 	}
 
 	return nil

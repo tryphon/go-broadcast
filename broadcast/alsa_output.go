@@ -6,11 +6,13 @@ import (
 )
 
 type AlsaOutput struct {
-	handle     alsa.Handle
-	Device     string
-	SampleRate int
+	handle       alsa.Handle
+	Device       string
+	SampleRate   int
+	SampleFormat SampleFormat
 
 	sampleCount int64
+	coder       *InterleavedAudioEncoder
 }
 
 func (output *AlsaOutput) Init() error {
@@ -27,23 +29,37 @@ func (output *AlsaOutput) Init() error {
 		output.SampleRate = 44100
 	}
 
-	output.handle.SampleFormat = alsa.SampleFormatS16LE
+	if output.SampleFormat != nil {
+		output.handle.SampleFormat = ToAlsaSampleFormat(output.SampleFormat)
+	}
 	output.handle.SampleRate = output.SampleRate
 	output.handle.Channels = 2
 
 	err = output.handle.ApplyHwParams()
-	return err
+	if err != nil {
+		return err
+	}
+
+	output.SampleFormat = FromAlsaSampleFormat(output.handle.SampleFormat)
+	output.coder = &InterleavedAudioEncoder{SampleFormat: output.SampleFormat, ChannelCount: output.handle.Channels}
+
+	Log.Debugf("Alsa SampleFormat: %v", output.SampleFormat.Name())
+
+	return nil
 }
 
 func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 	if alsa.Delay() < 0 {
-		Log.Debugf("Alsa delay is negative (%d), waiting for better conditions", alsa.Delay())
+		Log.Printf("Alsa delay is negative (%d), waiting for better conditions", alsa.Delay())
 		time.Sleep(time.Second)
 	}
-
 	alsa.handle.AvailUpdate()
 
-	pcmBytes := audio.PcmBytes()
+	pcmBytes, err := alsa.coder.Encode(audio)
+	if err != nil {
+		Log.Debugf("Can't encode audio in bytes: %v", err.Error())
+		return
+	}
 
 	alsaWriteLength, err := alsa.handle.Write(pcmBytes)
 	if err != nil {

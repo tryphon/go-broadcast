@@ -12,3 +12,9 @@ To test with a local loop :
 To test with smaller files :
 
     go-broadcast backup --file-duration=1m /tmp/records
+
+# Loopback
+
+    sudo modprobe snd-aloop
+    mplayer -loop 0 -ao alsa:device=hw=1.1.1 -srate 44110 input.wav
+    go-broadcast loopback --input-device=hw:1,0,1 --output-device=default

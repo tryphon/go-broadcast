@@ -265,12 +265,12 @@ func httpClient(arguments []string) {
 
 	if fixedRateTolerance > 0 && fixedRateTolerance < 1 {
 		fixedRateOutput := broadcast.FixedRateAudioHandler{
-			Output: &alsaOutput,
+			Output:     &alsaOutput,
 			SampleRate: uint(sampleRate),
-			Tolerance: fixedRateTolerance,
+			Tolerance:  fixedRateTolerance,
 		}
 
-		broadcast.Log.Debugf("Fixed Rate Output with %d%% tolerance", int(fixedRateTolerance * 100))
+		broadcast.Log.Debugf("Fixed Rate Output with %d%% tolerance", int(fixedRateTolerance*100))
 		outputHandler = &fixedRateOutput
 	}
 
@@ -354,14 +354,17 @@ func loopback(arguments []string) {
 
 	var bufferDuration time.Duration
 	var inputDevice, outputDevice string
-	// var inputSampleFormat, outputSampleFormat string
+	var inputSampleFormat, outputSampleFormat string
 	var sampleRate int
 
+	flags.BoolVar(&broadcast.Log.Debug, "debug", false, "Enable debug messages")
+	flags.BoolVar(&broadcast.Log.Syslog, "syslog", false, "Redirect messages to syslog")
+
 	flags.StringVar(&inputDevice, "input-device", "default", "The alsa device used to capture sound")
-	// flags.StringVar(&inputSampleFormat, "input-sample-format", "auto", "The sample format used to capture sound (s16le, s32le, s32be)")
+	flags.StringVar(&inputSampleFormat, "input-sample-format", "auto", "The sample format used to capture sound (s16le, s32le, s32be)")
 
 	flags.StringVar(&outputDevice, "output-device", "default", "The alsa device used to play sound")
-	// flags.StringVar(&outputSampleFormat, "output-sample-format", "auto", "The sample format used to play sound (s16le, s32le, s32be)")
+	flags.StringVar(&outputSampleFormat, "output-sample-format", "auto", "The sample format used to play sound (s16le, s32le, s32be)")
 
 	flags.DurationVar(&bufferDuration, "buffer-duration", 250*time.Millisecond, "Buffer duration")
 
@@ -377,17 +380,16 @@ func loopback(arguments []string) {
 	bufferSampleCount := int(float64(sampleRate) * bufferDuration.Seconds())
 	broadcast.Log.Debugf("Alsa bufferSampleCount: %d", bufferSampleCount)
 
-	alsaInput := broadcast.AlsaInput{Device: inputDevice, SampleRate: sampleRate, BufferSampleCount: bufferSampleCount, SampleFormat: broadcast.ParseSampleFormat("s16le")}
+	alsaInput := broadcast.AlsaInput{Device: inputDevice, SampleRate: sampleRate, BufferSampleCount: bufferSampleCount, SampleFormat: broadcast.ParseSampleFormat(inputSampleFormat)}
 	err := alsaInput.Init()
 	checkError(err)
 
-	alsaOutput := broadcast.AlsaOutput{Device: outputDevice, SampleRate: sampleRate}
+	alsaOutput := broadcast.AlsaOutput{Device: outputDevice, SampleRate: sampleRate, SampleFormat: broadcast.ParseSampleFormat(outputSampleFormat)}
 	err = alsaOutput.Init()
 	checkError(err)
 
 	channel := make(chan *broadcast.Audio, 100)
 	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
-		// fmt.Fprintf(os.Stderr, "read %d\n", audio.SampleCount())
 		channel <- audio
 	})
 	alsaInput.SetAudioHandler(audioHandler)
@@ -398,7 +400,6 @@ func loopback(arguments []string) {
 
 	for {
 		audio := <-channel
-		// fmt.Fprintf(os.Stderr, "write %d\n", audio.SampleCount())
 		alsaOutput.AudioOut(audio)
 	}
 }
