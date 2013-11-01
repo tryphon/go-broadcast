@@ -88,10 +88,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 
 				// Log.Debugf("read %d samples", samples)
 				if decoder.audioHandler != nil {
-					audio := new(Audio)
-					audio.LoadPcmFloats(&rawFloatBuffer, samples, 2)
-
-					decoder.audioHandler.AudioOut(audio)
+					decoder.audioHandler.AudioOut(decoder.newAudio(&rawFloatBuffer, samples))
 				}
 				vorbis.SynthesisRead(&decoder.vd, samples)
 			}
@@ -99,4 +96,16 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 	}
 
 	return true
+}
+
+func (decoder *VorbisDecoder) newAudio(pcmArray ***float32, sampleCount int) *Audio {
+	audio := NewAudio(sampleCount, int(decoder.vi.Channels()))
+	// OPTIMISE see vorbis.AnalysisBuffer
+	for channel := 0; channel < audio.ChannelCount(); channel++ {
+		audio.SetSamples(channel, make([]float32, sampleCount))
+		for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
+			audio.samples[channel][samplePosition] = vorbis.PcmArrayHelper(*pcmArray, channel, samplePosition)
+		}
+	}
+	return audio
 }

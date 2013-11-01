@@ -1,7 +1,6 @@
 package broadcast
 
 import (
-	vorbis "github.com/tryphon/go-vorbis"
 	"time"
 )
 
@@ -63,20 +62,6 @@ func (audio *Audio) Timestamp() time.Time {
 
 func (audio *Audio) SetTimestamp(timestamp time.Time) {
 	audio.timestamp = timestamp
-}
-
-func (audio *Audio) LoadPcmFloats(pcmArray ***float32, sampleCount int, channelCount int) {
-	audio.samples = make([][]float32, 2)
-	audio.channelCount = channelCount
-	audio.sampleCount = sampleCount
-
-	// OPTIMISE see vorbis.AnalysisBuffer
-	for channel := 0; channel < channelCount; channel++ {
-		audio.samples[channel] = make([]float32, sampleCount)
-		for samplePosition := 0; samplePosition < sampleCount; samplePosition++ {
-			audio.samples[channel][samplePosition] = vorbis.PcmArrayHelper(*pcmArray, channel, samplePosition)
-		}
-	}
 }
 
 func (audio *Audio) InterleavedFloats() []float32 {
