@@ -16,7 +16,7 @@ type AlsaInput struct {
 	bufferLength int
 	buffer       []byte
 
-	decoder *InterleavedAudioEncoder
+	decoder *InterleavedAudioCoder
 }
 
 func (input *AlsaInput) Init() (err error) {
@@ -45,7 +45,7 @@ func (input *AlsaInput) Init() (err error) {
 	}
 
 	input.SampleFormat = FromAlsaSampleFormat(input.handle.SampleFormat)
-	input.decoder = &InterleavedAudioEncoder{SampleFormat: input.SampleFormat, ChannelCount: input.handle.Channels}
+	input.decoder = &InterleavedAudioCoder{SampleFormat: input.SampleFormat, ChannelCount: input.handle.Channels}
 
 	Log.Debugf("Alsa SampleFormat: %v", input.SampleFormat.Name())
 

@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestInterleavedAudioEncoder_Encode(t *testing.T) {
-	encoder := InterleavedAudioEncoder{SampleFormat: Sample16bLittleEndian, ChannelCount: 2}
+func TestInterleavedAudioCoder_Encode(t *testing.T) {
+	encoder := InterleavedAudioCoder{SampleFormat: Sample16bLittleEndian, ChannelCount: 2}
 
 	audio := NewAudio(2, 2)
 	audio.SetSamples(0, []float32{0, 1})
@@ -22,8 +22,8 @@ func TestInterleavedAudioEncoder_Encode(t *testing.T) {
 	}
 }
 
-func TestInterleavedAudioEncoder_Decode(t *testing.T) {
-	coder := InterleavedAudioEncoder{SampleFormat: Sample16bLittleEndian, ChannelCount: 2}
+func TestInterleavedAudioCoder_Decode(t *testing.T) {
+	coder := InterleavedAudioCoder{SampleFormat: Sample16bLittleEndian, ChannelCount: 2}
 
 	// 0.0, 1.0, 1.0, 0.0 in s16le :
 	input := []byte{0, 0, 255, 127, 255, 127, 0, 0}

@@ -12,7 +12,7 @@ type AlsaOutput struct {
 	SampleFormat SampleFormat
 
 	sampleCount int64
-	coder       *InterleavedAudioEncoder
+	coder       *InterleavedAudioCoder
 }
 
 func (output *AlsaOutput) Init() error {
@@ -41,7 +41,7 @@ func (output *AlsaOutput) Init() error {
 	}
 
 	output.SampleFormat = FromAlsaSampleFormat(output.handle.SampleFormat)
-	output.coder = &InterleavedAudioEncoder{SampleFormat: output.SampleFormat, ChannelCount: output.handle.Channels}
+	output.coder = &InterleavedAudioCoder{SampleFormat: output.SampleFormat, ChannelCount: output.handle.Channels}
 
 	Log.Debugf("Alsa SampleFormat: %v", output.SampleFormat.Name())
 

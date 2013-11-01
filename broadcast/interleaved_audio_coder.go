@@ -4,12 +4,12 @@ import (
 	"bytes"
 )
 
-type InterleavedAudioEncoder struct {
+type InterleavedAudioCoder struct {
 	SampleFormat SampleFormat
 	ChannelCount int
 }
 
-func (encoder *InterleavedAudioEncoder) Encode(audio *Audio) ([]byte, error) {
+func (encoder *InterleavedAudioCoder) Encode(audio *Audio) ([]byte, error) {
 	buffer := &bytes.Buffer{}
 
 	for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
@@ -22,11 +22,11 @@ func (encoder *InterleavedAudioEncoder) Encode(audio *Audio) ([]byte, error) {
 	return buffer.Bytes(), nil
 }
 
-func (encoder *InterleavedAudioEncoder) FrameSize() int {
+func (encoder *InterleavedAudioCoder) FrameSize() int {
 	return encoder.SampleFormat.SampleSize() * encoder.ChannelCount
 }
 
-func (encoder *InterleavedAudioEncoder) Decode(data []byte) (*Audio, error) {
+func (encoder *InterleavedAudioCoder) Decode(data []byte) (*Audio, error) {
 	buffer := bytes.NewBuffer(data)
 
 	sampleCount := len(data) / encoder.FrameSize()
