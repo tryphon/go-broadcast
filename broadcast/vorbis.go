@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	metrics "github.com/rcrowley/go-metrics"
 	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
 )
@@ -14,15 +15,10 @@ type VorbisDecoder struct {
 	vb vorbis.Block    // local working space for packet PCM decode
 
 	audioHandler AudioHandler
-	sampleCount  int64
 }
 
 func (decoder *VorbisDecoder) SetAudioHandler(audioHandler AudioHandler) {
 	decoder.audioHandler = audioHandler
-}
-
-func (decoder *VorbisDecoder) SampleCount() int64 {
-	return decoder.sampleCount
 }
 
 func (decoder *VorbisDecoder) Reset() {
@@ -78,7 +74,7 @@ func (decoder *VorbisDecoder) PacketOut(packet *ogg.Packet) (result bool) {
 			samples = vorbis.SynthesisPcmout(&decoder.vd, &rawFloatBuffer)
 
 			if samples > 0 {
-				decoder.sampleCount += int64(samples)
+				metrics.GetOrRegisterCounter("vorbis.SampleCount", nil).Inc(int64(samples))
 
 				if packet.GranulePos > -1 {
 					// Log.Debugf("sampleCount: %d", decoder.sampleCount)

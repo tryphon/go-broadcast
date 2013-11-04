@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	metrics "github.com/rcrowley/go-metrics"
 	"math"
 	"math/rand"
 )
@@ -10,12 +11,6 @@ type AdjustAudioBuffer struct {
 
 	LimitSampleCount     uint32
 	ThresholdSampleCount uint32
-
-	adjustmentSampleCount int64
-}
-
-func (pseudoBuffer *AdjustAudioBuffer) AdjustmentSampleCount() int64 {
-	return pseudoBuffer.adjustmentSampleCount * int64(pseudoBuffer.adjustmentFactor())
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) fillRate() float64 {
@@ -53,6 +48,7 @@ func (pseudoBuffer *AdjustAudioBuffer) removeAudio() bool {
 func (pseudoBuffer *AdjustAudioBuffer) AudioOut(audio *Audio) {
 	pseudoBuffer.Buffer.AudioOut(audio)
 
+	pseudoBuffer.adjustmentCounter()
 	if pseudoBuffer.removeAudio() && pseudoBuffer.adjust() {
 		pseudoBuffer.logAdjustment(pseudoBuffer.Buffer.Read())
 	}
@@ -69,15 +65,28 @@ func (pseudoBuffer *AdjustAudioBuffer) adjust() bool {
 	return result
 }
 
+func (pseudoBuffer *AdjustAudioBuffer) metricName() string {
+	if pseudoBuffer.adjustmentFactor() > 0 {
+		return "buffer.LowAdjustement"
+	} else {
+		return "buffer.HighAdjustement"
+	}
+}
+
+func (pseudoBuffer *AdjustAudioBuffer) adjustmentCounter() metrics.Counter {
+	return metrics.GetOrRegisterCounter(pseudoBuffer.metricName(), nil)
+}
+
 func (pseudoBuffer *AdjustAudioBuffer) logAdjustment(audio *Audio) *Audio {
 	if audio != nil {
-		pseudoBuffer.adjustmentSampleCount += int64(audio.SampleCount())
-		// Log.Printf("Adjustment : %d samples\n", pseudoBuffer.adjustmentFactor()*audio.SampleCount())
+		pseudoBuffer.adjustmentCounter().Inc(int64(audio.SampleCount()))
 	}
 	return audio
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) Read() (audio *Audio) {
+	pseudoBuffer.adjustmentCounter()
+
 	if pseudoBuffer.addAudio() && pseudoBuffer.adjust() {
 		return pseudoBuffer.logAdjustment(NewAudio(1024, 2))
 	} else {

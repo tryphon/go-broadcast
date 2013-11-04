@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	metrics "github.com/rcrowley/go-metrics"
 	alsa "github.com/tryphon/alsa-go"
 	"time"
 )
@@ -11,8 +12,7 @@ type AlsaOutput struct {
 	SampleRate   int
 	SampleFormat SampleFormat
 
-	sampleCount int64
-	coder       *InterleavedAudioCoder
+	coder *InterleavedAudioCoder
 }
 
 func (output *AlsaOutput) Init() error {
@@ -49,10 +49,13 @@ func (output *AlsaOutput) Init() error {
 }
 
 func (alsa *AlsaOutput) AudioOut(audio *Audio) {
-	if alsa.Delay() < 0 {
-		Log.Printf("Alsa delay is negative (%d), waiting for better conditions", alsa.Delay())
+	delay := alsa.Delay()
+	metrics.GetOrRegisterGauge("alsa.output.Delay", nil).Update(int64(delay))
+	if delay < 0 {
+		Log.Printf("Alsa delay is negative (%d), waiting for better conditions", delay)
 		time.Sleep(time.Second)
 	}
+
 	alsa.handle.AvailUpdate()
 
 	pcmBytes, err := alsa.coder.Encode(audio)
@@ -68,15 +71,12 @@ func (alsa *AlsaOutput) AudioOut(audio *Audio) {
 	}
 
 	wroteSamples := int64(alsaWriteLength / len(pcmBytes) * audio.sampleCount)
-	alsa.sampleCount += wroteSamples
+
+	metrics.GetOrRegisterCounter("alsa.output.SampleCount", nil).Inc(wroteSamples)
 
 	if alsaWriteLength != len(pcmBytes) {
 		Log.Debugf("Did not write whole alsa buffer (Wrote %v, expected %v)", alsaWriteLength, len(pcmBytes))
 	}
-}
-
-func (alsa *AlsaOutput) SampleCount() int64 {
-	return alsa.sampleCount
 }
 
 func (alsa *AlsaOutput) Delay() (delay int) {

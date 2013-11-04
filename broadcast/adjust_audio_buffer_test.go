@@ -36,12 +36,13 @@ func TestAdjustAudioBuffer_adjustmentFactor_highAdjust(t *testing.T) {
 
 func TestAdjustAudioBuffer_logAdjustment(t *testing.T) {
 	buffer := &AdjustAudioBuffer{}
+	defer buffer.adjustmentCounter().Clear()
 
 	audio := NewAudio(1024, 2)
 	buffer.logAdjustment(audio)
 
-	if buffer.adjustmentSampleCount != int64(audio.SampleCount()) {
-		t.Errorf("logAdjustment should increase adjustmentSampleCount:\n got: %d\nwant: %d", buffer.adjustmentSampleCount, audio.SampleCount())
+	if buffer.adjustmentCounter().Count() != int64(audio.SampleCount()) {
+		t.Errorf("logAdjustment should increase adjustmentSampleCount:\n got: %d\nwant: %d", buffer.adjustmentCounter().Count(), audio.SampleCount())
 	}
 }
 
@@ -49,7 +50,7 @@ func TestAdjustAudioBuffer_logAdjustment_nil(t *testing.T) {
 	buffer := &AdjustAudioBuffer{}
 	buffer.logAdjustment(nil)
 
-	if buffer.adjustmentSampleCount != 0 {
-		t.Errorf("logAdjustment should not increase adjustmentSampleCount when no audio is given:\n got: %d\nwant: %d", buffer.adjustmentSampleCount, 0)
+	if buffer.adjustmentCounter().Count() != 0 {
+		t.Errorf("logAdjustment should not increase adjustmentSampleCount when no audio is given:\n got: %d\nwant: %d", buffer.adjustmentCounter().Count(), 0)
 	}
 }

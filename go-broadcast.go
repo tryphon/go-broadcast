@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"log"
@@ -10,6 +11,9 @@ import (
 	"time"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
+
+	metrics "github.com/rcrowley/go-metrics"
+	"net/http"
 )
 
 func main() {
@@ -207,6 +211,9 @@ func httpClient(arguments []string) {
 	flags.BoolVar(&broadcast.Log.Debug, "debug", false, "Enable debug messages")
 	flags.BoolVar(&broadcast.Log.Syslog, "syslog", false, "Redirect messages to syslog")
 
+	var httpServer string
+	flags.StringVar(&httpServer, "http-server", "", "Http server binding")
+
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient <url>\n", os.Args[0])
 		flags.PrintDefaults()
@@ -319,14 +326,13 @@ func httpClient(arguments []string) {
 		},
 	)
 
+	if httpServer != "" {
+		http.HandleFunc("/metrics", httpMetricsJSON)
+		go http.ListenAndServe(httpServer, nil)
+	}
+
 	if statusLoop > 0 {
-		go func() {
-			output := "SampleCount: %d, Low Adjustment: %d, High Adjustment: %d, Alsa SampleCount: %d, Alsa delay: %d, Vorbis: %d"
-			for {
-				time.Sleep(statusLoop)
-				broadcast.Log.Debugf(output, audioBuffer.SampleCount(), lowAdjustBuffer.AdjustmentSampleCount(), highAdjustBuffer.AdjustmentSampleCount(), alsaOutput.SampleCount(), alsaOutput.Delay(), httpInput.SampleCount())
-			}
-		}()
+		go metrics.Log(metrics.DefaultRegistry, statusLoop, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
 	}
 
 	go httpInput.Run()
@@ -347,6 +353,14 @@ func httpClient(arguments []string) {
 
 		outputHandler.AudioOut(audio)
 	}
+}
+
+func httpMetricsJSON(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("Content-Type", "application/json")
+	response.Header().Set("Access-Control-Allow-Origin", "*")
+
+	jsonBytes, _ := json.Marshal(metrics.DefaultRegistry)
+	response.Write(jsonBytes)
 }
 
 func loopback(arguments []string) {
