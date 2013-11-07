@@ -1,8 +1,8 @@
 package broadcast
 
 import (
-	metrics "github.com/rcrowley/go-metrics"
 	alsa "github.com/tryphon/alsa-go"
+	metrics "github.com/tryphon/go-metrics"
 	"time"
 )
 

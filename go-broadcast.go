@@ -12,7 +12,7 @@ import (
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	"net/http"
 )
 

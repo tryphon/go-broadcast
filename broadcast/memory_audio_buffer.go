@@ -1,7 +1,7 @@
 package broadcast
 
 import (
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 )
 
 const maxAudioBufferSize uint32 = 4096
@@ -32,6 +32,7 @@ func (buffer *MemoryAudioBuffer) SampleCount() uint32 {
 func (buffer *MemoryAudioBuffer) changeSampleCount(delta int) {
 	buffer.sampleCount += uint32(delta)
 	metrics.GetOrRegisterGauge("buffer.Size", metrics.DefaultRegistry).Update(int64(buffer.sampleCount))
+	metrics.GetOrRegisterHistogram("buffer.SizeHistory", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)).Update(int64(buffer.sampleCount))
 }
 
 func (buffer *MemoryAudioBuffer) AudioOut(audio *Audio) {
