@@ -12,6 +12,7 @@ import (
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
 
+	"code.google.com/p/go.net/websocket"
 	metrics "github.com/tryphon/go-metrics"
 	"net/http"
 )
@@ -270,6 +271,9 @@ func httpClient(arguments []string) {
 	alsaOutput := broadcast.AlsaOutput{Device: alsaDevice, SampleRate: sampleRate}
 	var outputHandler broadcast.AudioHandler = &alsaOutput
 
+	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{Output: outputHandler}
+	outputHandler = soundMeterAudioHandler
+
 	if fixedRateTolerance > 0 && fixedRateTolerance < 1 {
 		fixedRateOutput := broadcast.FixedRateAudioHandler{
 			Output:     &alsaOutput,
@@ -327,7 +331,44 @@ func httpClient(arguments []string) {
 	)
 
 	if httpServer != "" {
-		http.HandleFunc("/metrics", httpMetricsJSON)
+		metricsJSON := func(response http.ResponseWriter, request *http.Request) {
+			response.Header().Set("Content-Type", "application/json")
+			response.Header().Set("Access-Control-Allow-Origin", "*")
+
+			jsonBytes, _ := json.Marshal(metrics.DefaultRegistry)
+			response.Write(jsonBytes)
+		}
+		http.HandleFunc("/metrics", metricsJSON)
+
+		soundMeterWebSocket := func(webSocket *websocket.Conn) {
+			broadcast.Log.Debugf("New SoundMeter websocket connection")
+
+			receiver := soundMeterAudioHandler.NewReceiver()
+			defer receiver.Close()
+
+			go func() {
+				for metrics := range receiver.Channel {
+					jsonBytes, _ := json.Marshal(metrics)
+					err := websocket.Message.Send(webSocket, string(jsonBytes))
+					if err != nil {
+						broadcast.Log.Debugf("Can't send websocket message: %v", err)
+						break
+					}
+				}
+			}()
+
+			for {
+				var message string
+				err := websocket.Message.Receive(webSocket, &message)
+				if err != nil {
+					break
+				}
+			}
+
+			broadcast.Log.Debugf("Close SoundMeter websocket connection")
+		}
+		http.Handle("/soundmeter.ws", websocket.Handler(soundMeterWebSocket))
+
 		go http.ListenAndServe(httpServer, nil)
 	}
 
@@ -353,14 +394,6 @@ func httpClient(arguments []string) {
 
 		outputHandler.AudioOut(audio)
 	}
-}
-
-func httpMetricsJSON(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
-	response.Header().Set("Access-Control-Allow-Origin", "*")
-
-	jsonBytes, _ := json.Marshal(metrics.DefaultRegistry)
-	response.Write(jsonBytes)
 }
 
 func loopback(arguments []string) {

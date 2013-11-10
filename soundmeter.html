@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<body>
+
+<style>
+.channel {
+  width: 200px;
+  height: 20px;
+  background: green;
+}
+
+#soundmeter {
+  width: 200px;
+  border: 1px solid black;
+}
+</style>
+
+<div id="soundmeter">
+  <div id="soundmeter_channel0" class="channel">
+  </div>
+  <div id="soundmeter_channel1" class="channel">
+  </div>
+</div>
+
+<script>
+  if (!Array.prototype.map) {
+    Array.prototype.map = function(fun /*, thisp*/) {
+      var len = this.length;
+      if (typeof fun != "function")
+        throw new TypeError();
+
+      var res = new Array(len);
+      var thisp = arguments[1];
+      for (var i = 0; i < len; i++) {
+        if (i in this)
+          res[i] = fun.call(thisp, this[i], i, this);
+      }
+      return res;
+    };
+  }
+
+  if (!Array.prototype.forEach) {
+    Array.prototype.forEach = function(fun /*, thisp*/) {
+      var len = this.length;
+      if (typeof fun != "function")
+        throw new TypeError();
+
+      var thisp = arguments[1];
+      for (var i = 0; i < len; i++) {
+        if (i in this)
+          fun.call(thisp, this[i], i, this);
+      }
+    };
+  }
+
+  function SoundMetrics(attributes) {
+    this.peakLevel = attributes["PeakLevel"];
+  }
+
+  SoundMetrics.prototype.getPeakDB = function() {
+    return 10 * Math.log(this.peakLevel) / 2.302585092994046;
+  };
+
+  display = document.getElementById("soundmeter")
+
+  var Socket = "MozWebSocket" in window ? MozWebSocket : WebSocket;
+  var ws = new Socket("ws://172.20.2.14:9000/soundmeter.ws");
+  ws.onmessage = function(evt) {
+     metrics = eval(evt.data).map(function(attributes) {
+       return new SoundMetrics(attributes)
+     })
+
+     metrics.forEach(function(channelMetrics, channelIndex) {
+       channelDisplay = document.getElementById("soundmeter_channel" + channelIndex)
+       var peakDB = channelMetrics.getPeakDB();
+       var width = (peakDB + 40) / 40.0 * 200;
+
+       /* channelDisplay.innerHTML = peakDB; */
+       channelDisplay.style.width = width + "px";
+     })
+  };
+  ws.onclose = function() { console.log("socket closed"); };
+</script>
+</body>

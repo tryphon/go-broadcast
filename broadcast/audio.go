@@ -26,9 +26,17 @@ type Audio struct {
 }
 
 func NewAudio(sampleCount int, channelCount int) *Audio {
-	audio := &Audio{sampleCount: sampleCount, channelCount: channelCount}
-	audio.samples = make([][]float32, channelCount)
-	audio.timestamp = time.Now().UTC()
+	audio := &Audio{
+		sampleCount:  sampleCount,
+		channelCount: channelCount,
+		timestamp:    time.Now().UTC(),
+		samples:      make([][]float32, channelCount),
+	}
+
+	for channel := 0; channel < channelCount; channel++ {
+		audio.samples[channel] = make([]float32, sampleCount)
+	}
+
 	return audio
 }
 
@@ -42,6 +50,10 @@ func (audio *Audio) Sample(channel int, samplePosition int) float32 {
 	} else {
 		return 0
 	}
+}
+
+func (audio *Audio) SetSample(channel int, samplePosition int, sample float32) {
+	audio.samples[channel][samplePosition] = sample
 }
 
 func (audio *Audio) SetSamples(channel int, samples []float32) {
