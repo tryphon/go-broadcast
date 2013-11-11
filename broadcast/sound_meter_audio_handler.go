@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"container/list"
+	"encoding/json"
 	"math"
 )
 
@@ -11,12 +12,18 @@ type SoundMeterAudioHandler struct {
 	receivers   *list.List
 }
 
-type SoundMetrics struct {
+type SoundChannelMetrics struct {
 	PeakLevel float32
 }
 
-func NewSoundMetrics(audio *Audio) []SoundMetrics {
-	soundMetrics := make([]SoundMetrics, audio.ChannelCount())
+type SoundMetrics struct {
+	ChannelMetrics []SoundChannelMetrics
+}
+
+func NewSoundMetrics(audio *Audio) *SoundMetrics {
+	soundMetrics := &SoundMetrics{
+		ChannelMetrics: make([]SoundChannelMetrics, audio.ChannelCount()),
+	}
 
 	for channel := 0; channel < audio.ChannelCount(); channel++ {
 		var peak float64 = 0
@@ -26,10 +33,18 @@ func NewSoundMetrics(audio *Audio) []SoundMetrics {
 				peak = value
 			}
 		}
-		soundMetrics[channel] = SoundMetrics{PeakLevel: float32(peak)}
+		soundMetrics.ChannelMetrics[channel].PeakLevel = float32(peak)
 	}
 
 	return soundMetrics
+}
+
+func (metrics *SoundMetrics) ChannelCount() int {
+	return len(metrics.ChannelMetrics)
+}
+
+func (metrics *SoundMetrics) MarshalJSON() ([]byte, error) {
+	return json.Marshal(metrics.ChannelMetrics)
 }
 
 func (soundMeter *SoundMeterAudioHandler) AudioOut(audio *Audio) {
@@ -44,7 +59,7 @@ func (soundMeter *SoundMeterAudioHandler) AudioOut(audio *Audio) {
 
 func (soundMeter *SoundMeterAudioHandler) NewReceiver() *SoundMetricsReceiver {
 	receiver := &SoundMetricsReceiver{
-		Channel:    make(chan []SoundMetrics),
+		Channel:    make(chan *SoundMetrics),
 		soundMeter: soundMeter,
 	}
 	if soundMeter.receivers == nil {
@@ -81,7 +96,7 @@ func (soundMeter *SoundMeterAudioHandler) computeAudio(audio *Audio) {
 	soundMeter.sendMetrics(soundMetrics)
 }
 
-func (soundMeter *SoundMeterAudioHandler) sendMetrics(metrics []SoundMetrics) {
+func (soundMeter *SoundMeterAudioHandler) sendMetrics(metrics *SoundMetrics) {
 	if soundMeter.receivers == nil {
 		return
 	}
@@ -93,7 +108,7 @@ func (soundMeter *SoundMeterAudioHandler) sendMetrics(metrics []SoundMetrics) {
 }
 
 type SoundMetricsReceiver struct {
-	Channel    chan []SoundMetrics
+	Channel    chan *SoundMetrics
 	soundMeter *SoundMeterAudioHandler
 }
 

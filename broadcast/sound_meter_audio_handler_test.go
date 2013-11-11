@@ -13,16 +13,16 @@ func TestNewSoundMetrics(t *testing.T) {
 
 	soundMetrics := NewSoundMetrics(audio)
 
-	if len(soundMetrics) != audio.ChannelCount() {
-		t.Errorf("Should have a SoundMetrics for each channel:\n got: %d\nwant: %d", len(soundMetrics), audio.ChannelCount())
+	if soundMetrics.ChannelCount() != audio.ChannelCount() {
+		t.Errorf("Should have a SoundChannelMetrics for each channel:\n got: %d\nwant: %d", soundMetrics.ChannelCount(), audio.ChannelCount())
 	}
 
-	channelOnePeakLevel := soundMetrics[0]
+	channelOnePeakLevel := soundMetrics.ChannelMetrics[0]
 	if channelOnePeakLevel.PeakLevel != 1 {
 		t.Errorf("Wrong peak level on channel one:\n got: %d\nwant: %d", channelOnePeakLevel.PeakLevel, 1)
 	}
 
-	channelTwoPeakLevel := soundMetrics[1]
+	channelTwoPeakLevel := soundMetrics.ChannelMetrics[1]
 	if channelTwoPeakLevel.PeakLevel != 0 {
 		t.Errorf("Wrong peak level on channel one:\n got: %d\nwant: %d", channelTwoPeakLevel.PeakLevel, 0)
 	}
@@ -34,12 +34,14 @@ func TestSoundMeterAudioHandler_NewReceiver(t *testing.T) {
 	receiver := soundMeter.NewReceiver()
 	defer receiver.Close()
 
-	var soundMetrics []SoundMetrics
+	var soundMetrics *SoundMetrics
 	go func() {
 		soundMetrics = <-receiver.Channel
 	}()
 
-	expectedMetrics := []SoundMetrics{SoundMetrics{PeakLevel: 1}}
+	expectedMetrics := &SoundMetrics{
+		ChannelMetrics: []SoundChannelMetrics{SoundChannelMetrics{PeakLevel: 1}},
+	}
 	soundMeter.sendMetrics(expectedMetrics)
 
 	if !reflect.DeepEqual(soundMetrics, expectedMetrics) {
@@ -56,7 +58,7 @@ func TestSoundMeterAudioHandler_computeAudio(t *testing.T) {
 	receiver := soundMeter.NewReceiver()
 	defer receiver.Close()
 
-	var soundMetrics []SoundMetrics
+	var soundMetrics *SoundMetrics
 	go func() {
 		soundMetrics = <-receiver.Channel
 	}()
@@ -67,8 +69,8 @@ func TestSoundMeterAudioHandler_computeAudio(t *testing.T) {
 	}
 }
 
-func TestSoundMetrics_json(t *testing.T) {
-	metrics := SoundMetrics{PeakLevel: 0.333}
+func TestSoundChannelMetrics_json(t *testing.T) {
+	metrics := SoundChannelMetrics{PeakLevel: 0.333}
 	jsonBytes, _ := json.Marshal(metrics)
 
 	expectedJson := []byte("{\"PeakLevel\":0.333}")
@@ -77,8 +79,11 @@ func TestSoundMetrics_json(t *testing.T) {
 	}
 }
 
-func TestSoundMetrics_SliceJson(t *testing.T) {
-	metrics := []SoundMetrics{SoundMetrics{PeakLevel: 0.333}}
+func TestSoundMetrics_json(t *testing.T) {
+	metrics := &SoundMetrics{
+		ChannelMetrics: []SoundChannelMetrics{SoundChannelMetrics{PeakLevel: 0.333}},
+	}
+
 	jsonBytes, _ := json.Marshal(metrics)
 
 	expectedJson := []byte("[{\"PeakLevel\":0.333}]")
