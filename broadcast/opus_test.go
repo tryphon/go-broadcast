@@ -8,7 +8,7 @@ import (
 )
 
 func TestOpus_encode(t *testing.T) {
-	encoder, err := OpusEncoderCreate()
+	encoder, err := OpusEncoderCreate(512000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestOpus_decode(t *testing.T) {
 	}
 	defer decoder.Destroy()
 
-	encoder, err := OpusEncoderCreate()
+	encoder, err := OpusEncoderCreate(512000)
 	if err != nil {
 		t.Fatal(err)
 	}

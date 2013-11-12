@@ -5,11 +5,16 @@ import (
 )
 
 type OpusAudioEncoder struct {
+	Bitrate     int
 	opusEncoder *OpusEncoder
 }
 
 func (encoder *OpusAudioEncoder) Init() error {
-	opusEncoder, err := OpusEncoderCreate()
+	if encoder.Bitrate == 0 {
+		encoder.Bitrate = 256000
+	}
+
+	opusEncoder, err := OpusEncoderCreate(encoder.Bitrate)
 	if err != nil {
 		return err
 	}

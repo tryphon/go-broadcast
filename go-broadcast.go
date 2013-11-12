@@ -93,29 +93,33 @@ func backup(arguments []string) {
 }
 
 func udpClient(arguments []string) {
-	flags := flag.NewFlagSet("udpclient", flag.ExitOnError)
+	config := broadcast.UDPClientConfig{}
 
-	var alsaDevice string
-	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to capture sound")
+	flags := flag.NewFlagSet("udpclient", flag.ExitOnError)
+	config.Flags(flags)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] udpclient <host>:<port>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] --udp-target=host:port udpclient\n", os.Args[0])
 		flags.PrintDefaults()
 	}
 
 	flags.Parse(arguments)
 
-	if flags.NArg() != 1 {
+	if config.Udp.Target == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	alsaInput := broadcast.AlsaInput{Device: alsaDevice, SampleRate: 48000}
+	broadcast.Log.Printf("Config: %v", config)
+
+	alsaInput := &broadcast.AlsaInput{SampleRate: 48000}
+	udpOutput := &broadcast.UDPOutput{}
+
+	config.Apply(alsaInput, udpOutput)
 
 	err := alsaInput.Init()
 	checkError(err)
 
-	udpOutput := &broadcast.UDPOutput{Target: flags.Arg(0)}
 	err = udpOutput.Init()
 	checkError(err)
 

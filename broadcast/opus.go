@@ -36,7 +36,7 @@ const (
 	OPUS_OK int = C.OPUS_OK
 )
 
-func OpusEncoderCreate() (*OpusEncoder, error) {
+func OpusEncoderCreate(bitrate int) (*OpusEncoder, error) {
 	encoder := &OpusEncoder{}
 
 	var cError C.int
@@ -46,7 +46,7 @@ func OpusEncoderCreate() (*OpusEncoder, error) {
 		return nil, errors.New(fmt.Sprintf("Can't create Opus encoder: %d", int(cError)))
 	}
 
-	C.opus_encoder_ctl_set_birate(handle, 512000)
+	C.opus_encoder_ctl_set_birate(handle, C.opus_int32(bitrate))
 	C.opus_encoder_ctl_set_complexity(handle, 10)
 	C.opus_encoder_ctl_set_signal(handle, C.OPUS_SIGNAL_MUSIC)
 

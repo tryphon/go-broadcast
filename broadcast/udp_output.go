@@ -26,13 +26,12 @@ func (output *UDPOutput) Init() (err error) {
 	output.connection = connection
 
 	if output.Encoder == nil {
-		opusEncoder := &OpusAudioEncoder{}
-		err = opusEncoder.Init()
-		if err != nil {
-			return err
-		}
+		output.Encoder = &OpusAudioEncoder{}
+	}
 
-		output.Encoder = opusEncoder
+	err = output.Encoder.Init()
+	if err != nil {
+		return err
 	}
 
 	if output.PacketSampleCount == 0 {
