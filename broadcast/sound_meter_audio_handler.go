@@ -2,14 +2,17 @@ package broadcast
 
 import (
 	"container/list"
+	"container/ring"
 	"encoding/json"
 	"math"
 )
 
 type SoundMeterAudioHandler struct {
-	Output      AudioHandler
+	Output AudioHandler
+
 	resizeAudio *ResizeAudio
 	receivers   *list.List
+	history     *SoundMetricsHistory
 }
 
 type SoundChannelMetrics struct {
@@ -85,14 +88,13 @@ func (soundMeter *SoundMeterAudioHandler) closeReceiver(receiver *SoundMetricsRe
 }
 
 func (soundMeter *SoundMeterAudioHandler) computeAudio(audio *Audio) {
-	if soundMeter.receivers == nil {
-		return
-	}
-	if soundMeter.receivers.Len() == 0 {
-		return
+	if soundMeter.history == nil {
+		soundMeter.history = NewSoundMetricsHistory(44100/4410*300, 2)
 	}
 
 	soundMetrics := NewSoundMetrics(audio)
+
+	soundMeter.history.Update(soundMetrics)
 	soundMeter.sendMetrics(soundMetrics)
 }
 
@@ -107,6 +109,15 @@ func (soundMeter *SoundMeterAudioHandler) sendMetrics(metrics *SoundMetrics) {
 	}
 }
 
+func (soundMeter SoundMeterAudioHandler) MarshalJSON() ([]byte, error) {
+	data := map[string]map[string]interface{}{
+		"history": map[string]interface{}{
+			"300": soundMeter.history.GlobalMetrics(),
+		},
+	}
+	return json.Marshal(data)
+}
+
 type SoundMetricsReceiver struct {
 	Channel    chan *SoundMetrics
 	soundMeter *SoundMeterAudioHandler
@@ -114,4 +125,46 @@ type SoundMetricsReceiver struct {
 
 func (receiver *SoundMetricsReceiver) Close() {
 	receiver.soundMeter.closeReceiver(receiver)
+}
+
+type SoundMetricsHistory struct {
+	ChannelCount int
+	metrics      *ring.Ring
+}
+
+func NewSoundMetricsHistory(length int, channelCount int) *SoundMetricsHistory {
+	return &SoundMetricsHistory{
+		ChannelCount: channelCount,
+		metrics:      ring.New(length),
+	}
+}
+
+func (history *SoundMetricsHistory) Update(metrics *SoundMetrics) {
+	history.metrics.Value = metrics
+	history.metrics = history.metrics.Next()
+}
+
+func (history *SoundMetricsHistory) GlobalMetrics() *SoundMetrics {
+	globalMetrics := &SoundMetrics{
+		ChannelMetrics: make([]SoundChannelMetrics, history.ChannelCount),
+	}
+
+	history.metrics.Do(func(value interface{}) {
+		if value == nil {
+			return
+		}
+
+		metrics := value.(*SoundMetrics)
+
+		for channel := 0; channel < history.ChannelCount; channel++ {
+			globalChannelMetrics := globalMetrics.ChannelMetrics[channel]
+			channelMetrics := metrics.ChannelMetrics[channel]
+
+			if channelMetrics.PeakLevel > globalChannelMetrics.PeakLevel {
+				globalMetrics.ChannelMetrics[channel].PeakLevel = channelMetrics.PeakLevel
+			}
+		}
+	})
+
+	return globalMetrics
 }

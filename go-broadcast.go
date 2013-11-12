@@ -340,6 +340,15 @@ func httpClient(arguments []string) {
 		}
 		http.HandleFunc("/metrics", metricsJSON)
 
+		soundMeterJSON := func(response http.ResponseWriter, request *http.Request) {
+			response.Header().Set("Content-Type", "application/json")
+			response.Header().Set("Access-Control-Allow-Origin", "*")
+
+			jsonBytes, _ := json.Marshal(soundMeterAudioHandler)
+			response.Write(jsonBytes)
+		}
+		http.HandleFunc("/soundmeter.json", soundMeterJSON)
+
 		soundMeterWebSocket := func(webSocket *websocket.Conn) {
 			broadcast.Log.Debugf("New SoundMeter websocket connection")
 

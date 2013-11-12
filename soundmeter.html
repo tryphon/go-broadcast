@@ -64,7 +64,7 @@
   display = document.getElementById("soundmeter")
 
   var Socket = "MozWebSocket" in window ? MozWebSocket : WebSocket;
-  var ws = new Socket("ws://172.20.2.14:9000/soundmeter.ws");
+  var ws = new Socket("ws://localhost:9000/soundmeter.ws");
   ws.onmessage = function(evt) {
      metrics = eval(evt.data).map(function(attributes) {
        return new SoundMetrics(attributes)
