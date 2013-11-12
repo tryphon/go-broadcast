@@ -73,7 +73,11 @@
      metrics.forEach(function(channelMetrics, channelIndex) {
        channelDisplay = document.getElementById("soundmeter_channel" + channelIndex)
        var peakDB = channelMetrics.getPeakDB();
-       var width = (peakDB + 40) / 40.0 * 200;
+       var width = 0
+
+       if (peakDB > -40) {
+         width = (peakDB + 40) / 40.0 * 200;
+       }
 
        /* channelDisplay.innerHTML = peakDB; */
        channelDisplay.style.width = width + "px";

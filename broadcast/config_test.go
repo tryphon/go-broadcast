@@ -105,3 +105,26 @@ func TestOpusAudioEncoderConfig_Apply(t *testing.T) {
 		t.Errorf("OpusAudioEncoder Bitrate should be config Bitrate :\n got: %v\nwant: %v", opusEncoder.Bitrate, config.Bitrate)
 	}
 }
+
+func TestHttpServerConfig_Flags(t *testing.T) {
+	config := HttpServerConfig{}
+
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	config.Flags(flags, "http")
+
+	flags.Parse(strings.Split("-http-bind=localhost:9000", " "))
+	if config.Bind != "localhost:9000" {
+		t.Errorf("Bind should be 'bind' flag value :\n got: %v\nwant: %v", config.Bind, "localhost:9000")
+	}
+}
+
+func TestHttpServerConfig_Apply(t *testing.T) {
+	config := HttpServerConfig{Bind: "0.0.0.0:9000"}
+	httpEncoder := &HttpServer{}
+
+	config.Apply(httpEncoder)
+
+	if httpEncoder.Bind != config.Bind {
+		t.Errorf("HttpServer Bind should be config Bind :\n got: %v\nwant: %v", httpEncoder.Bind, config.Bind)
+	}
+}

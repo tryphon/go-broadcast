@@ -115,7 +115,14 @@ func udpClient(arguments []string) {
 	alsaInput := &broadcast.AlsaInput{SampleRate: 48000}
 	udpOutput := &broadcast.UDPOutput{}
 
-	config.Apply(alsaInput, udpOutput)
+	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: udpOutput,
+	}
+	alsaInput.SetAudioHandler(soundMeterAudioHandler)
+
+	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+
+	config.Apply(alsaInput, udpOutput, httpServer)
 
 	err := alsaInput.Init()
 	checkError(err)
@@ -123,10 +130,8 @@ func udpClient(arguments []string) {
 	err = udpOutput.Init()
 	checkError(err)
 
-	audioHandler := &broadcast.SoundMeterAudioHandler{
-		Output: udpOutput,
-	}
-	alsaInput.SetAudioHandler(audioHandler)
+	err = httpServer.Init()
+	checkError(err)
 
 	go alsaInput.Run()
 

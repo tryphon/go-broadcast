@@ -9,16 +9,19 @@ import (
 type UDPClientConfig struct {
 	Alsa AlsaInputConfig
 	Udp  UDPOutputConfig
+	Http HttpServerConfig
 }
 
 func (config *UDPClientConfig) Flags(flags *flag.FlagSet) {
 	config.Alsa.Flags(flags, "alsa")
 	config.Udp.Flags(flags, "udp")
+	config.Http.Flags(flags, "http")
 }
 
-func (config *UDPClientConfig) Apply(alsaInput *AlsaInput, udpOutput *UDPOutput) {
+func (config *UDPClientConfig) Apply(alsaInput *AlsaInput, udpOutput *UDPOutput, httpServer *HttpServer) {
 	config.Alsa.Apply(alsaInput)
 	config.Udp.Apply(udpOutput)
+	config.Http.Apply(httpServer)
 }
 
 type AlsaInputConfig struct {
@@ -73,4 +76,16 @@ func (config *OpusAudioEncoderConfig) Flags(flags *flag.FlagSet, prefix string) 
 
 func (config *OpusAudioEncoderConfig) Apply(opusEncoder *OpusAudioEncoder) {
 	opusEncoder.Bitrate = config.Bitrate
+}
+
+type HttpServerConfig struct {
+	Bind string
+}
+
+func (config *HttpServerConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Bind, strings.Join([]string{prefix, "bind"}, "-"), "", "'[address]:port' where the HTTP server is bind")
+}
+
+func (config *HttpServerConfig) Apply(httpServer *HttpServer) {
+	httpServer.Bind = config.Bind
 }
