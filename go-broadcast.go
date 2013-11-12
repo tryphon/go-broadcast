@@ -110,9 +110,10 @@ func udpClient(arguments []string) {
 		os.Exit(1)
 	}
 
+	config.Alsa.SampleRate = 48000
 	broadcast.Log.Printf("Config: %v", config)
 
-	alsaInput := &broadcast.AlsaInput{SampleRate: 48000}
+	alsaInput := &broadcast.AlsaInput{}
 	udpOutput := &broadcast.UDPOutput{}
 
 	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
@@ -141,10 +142,10 @@ func udpClient(arguments []string) {
 }
 
 func udpServer(arguments []string) {
-	flags := flag.NewFlagSet("udpserver", flag.ExitOnError)
+	config := broadcast.UDPServerConfig{}
 
-	var alsaDevice string
-	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to play sound")
+	flags := flag.NewFlagSet("udpserver", flag.ExitOnError)
+	config.Flags(flags)
 
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] udpserver [bind]:<port>\n", os.Args[0])
@@ -153,18 +154,27 @@ func udpServer(arguments []string) {
 
 	flags.Parse(arguments)
 
-	if flags.NArg() != 1 {
-		flag.Usage()
-		os.Exit(1)
+	config.Alsa.SampleRate = 48000
+	broadcast.Log.Printf("Config: %v", config)
+
+	alsaOutput := &broadcast.AlsaOutput{}
+	udpInput := &broadcast.UDPInput{}
+
+	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: alsaOutput,
 	}
 
-	alsaOutput := &broadcast.AlsaOutput{Device: alsaDevice, SampleRate: 48000}
+	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+
+	config.Apply(alsaOutput, udpInput, httpServer)
 
 	err := alsaOutput.Init()
 	checkError(err)
 
-	udpInput := &broadcast.UDPInput{Bind: flags.Arg(0)}
 	err = udpInput.Init()
+	checkError(err)
+
+	err = httpServer.Init()
 	checkError(err)
 
 	channel := make(chan *broadcast.Audio, 100)
@@ -177,7 +187,7 @@ func udpServer(arguments []string) {
 
 	for {
 		audio := <-channel
-		alsaOutput.AudioOut(audio)
+		soundMeterAudioHandler.AudioOut(audio)
 	}
 }
 

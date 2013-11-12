@@ -24,6 +24,24 @@ func (config *UDPClientConfig) Apply(alsaInput *AlsaInput, udpOutput *UDPOutput,
 	config.Http.Apply(httpServer)
 }
 
+type UDPServerConfig struct {
+	Alsa AlsaOutputConfig
+	Udp  UDPInputConfig
+	Http HttpServerConfig
+}
+
+func (config *UDPServerConfig) Flags(flags *flag.FlagSet) {
+	config.Alsa.Flags(flags, "alsa")
+	config.Udp.Flags(flags, "udp")
+	config.Http.Flags(flags, "http")
+}
+
+func (config *UDPServerConfig) Apply(alsaOutput *AlsaOutput, udpInput *UDPInput, httpServer *HttpServer) {
+	config.Alsa.Apply(alsaOutput)
+	config.Udp.Apply(udpInput)
+	config.Http.Apply(httpServer)
+}
+
 type AlsaInputConfig struct {
 	Device         string
 	SampleRate     int
@@ -47,6 +65,24 @@ func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
 	alsaInput.SampleFormat = ParseSampleFormat(config.SampleFormat)
 }
 
+type AlsaOutputConfig struct {
+	Device       string
+	SampleRate   int
+	SampleFormat string
+}
+
+func (config *AlsaOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Device, strings.Join([]string{prefix, "device"}, "-"), "default", "The alsa device used to record sound")
+	flags.IntVar(&config.SampleRate, strings.Join([]string{prefix, "sample-rate"}, "-"), 44100, "Sample rate")
+	flags.StringVar(&config.SampleFormat, strings.Join([]string{prefix, "sample-format"}, "-"), "auto", "The sample format used to record sound (s16le, s32le, s32be)")
+}
+
+func (config *AlsaOutputConfig) Apply(alsaOutput *AlsaOutput) {
+	alsaOutput.Device = config.Device
+	alsaOutput.SampleRate = config.SampleRate
+	alsaOutput.SampleFormat = ParseSampleFormat(config.SampleFormat)
+}
+
 type UDPOutputConfig struct {
 	Target string
 	Opus   OpusAudioEncoderConfig
@@ -64,6 +100,18 @@ func (config *UDPOutputConfig) Apply(udpOutput *UDPOutput) {
 		udpOutput.Encoder = &OpusAudioEncoder{}
 	}
 	config.Opus.Apply(udpOutput.Encoder.(*OpusAudioEncoder))
+}
+
+type UDPInputConfig struct {
+	Bind string
+}
+
+func (config *UDPInputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Bind, strings.Join([]string{prefix, "bind"}, "-"), ":9090", "The [address]:port where UDP stream is received")
+}
+
+func (config *UDPInputConfig) Apply(udpInput *UDPInput) {
+	udpInput.Bind = config.Bind
 }
 
 type OpusAudioEncoderConfig struct {

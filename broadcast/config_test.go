@@ -49,6 +49,42 @@ func TestAlsaInputConfig_Apply(t *testing.T) {
 	}
 }
 
+func TestAlsaOutputConfig_Flags(t *testing.T) {
+	config := AlsaOutputConfig{}
+
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	config.Flags(flags, "alsa")
+
+	flags.Parse(strings.Split("-alsa-device=test -alsa-sample-format=s32le -alsa-sample-rate=48000", " "))
+
+	if config.Device != "test" {
+		t.Errorf("Device should be 'device' flag value :\n got: %v\nwant: %v", config.Device, "test")
+	}
+	if config.SampleRate != 48000 {
+		t.Errorf("SampleRate should be 'sample-rate' flag value :\n got: %v\nwant: %v", config.SampleRate, 48000)
+	}
+	if config.SampleFormat != "s32le" {
+		t.Errorf("SampleFormat should be 'sample-format' flag value :\n got: %v\nwant: %v", config.SampleFormat, "s32le")
+	}
+}
+
+func TestAlsaOutputConfig_Apply(t *testing.T) {
+	config := AlsaOutputConfig{Device: "test", SampleRate: 48000, SampleFormat: "s32le"}
+	alsaOutput := &AlsaOutput{}
+
+	config.Apply(alsaOutput)
+
+	if alsaOutput.Device != config.Device {
+		t.Errorf("AlsaOutput Device should be config Device :\n got: %v\nwant: %v", alsaOutput.Device, config.Device)
+	}
+	if alsaOutput.SampleRate != config.SampleRate {
+		t.Errorf("AlsaOutput SampleRate should be config SampleRate :\n got: %v\nwant: %v", alsaOutput.SampleRate, config.SampleRate)
+	}
+	if alsaOutput.SampleFormat != Sample32bLittleEndian {
+		t.Errorf("AlsaOutput SampleFormat should be parsed config SampleFormat :\n got: %v\nwant: %v", alsaOutput.SampleFormat, Sample32bLittleEndian)
+	}
+}
+
 func TestUDPOutputConfig_Flags(t *testing.T) {
 	config := UDPOutputConfig{}
 
@@ -80,6 +116,31 @@ func TestUDPOutputConfig_Apply(t *testing.T) {
 	}
 	if bitrate := udpOutput.Encoder.(*OpusAudioEncoder).Bitrate; bitrate != config.Opus.Bitrate {
 		t.Errorf("UDPOutput Target should be config Target :\n got: %v\nwant: %v", bitrate, config.Opus.Bitrate)
+	}
+}
+
+func TestUDPInputConfig_Flags(t *testing.T) {
+	config := UDPInputConfig{}
+
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	config.Flags(flags, "udp")
+
+	flags.Parse(strings.Split("-udp-bind=localhost:9000", " "))
+	if config.Bind != "localhost:9000" {
+		t.Errorf("Bind should be 'bind' flag value :\n got: %v\nwant: %v", config.Bind, "localhost:9000")
+	}
+}
+
+func TestUDPInputConfig_Apply(t *testing.T) {
+	config := UDPInputConfig{
+		Bind: "localhost:9000",
+	}
+	udpInput := &UDPInput{}
+
+	config.Apply(udpInput)
+
+	if udpInput.Bind != config.Bind {
+		t.Errorf("UDPInput Bind should be config Bind :\n got: %v\nwant: %v", udpInput.Bind, config.Bind)
 	}
 }
 

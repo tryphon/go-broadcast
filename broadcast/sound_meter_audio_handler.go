@@ -87,14 +87,17 @@ func (soundMeter *SoundMeterAudioHandler) closeReceiver(receiver *SoundMetricsRe
 	}
 }
 
-func (soundMeter *SoundMeterAudioHandler) computeAudio(audio *Audio) {
+func (soundMeter *SoundMeterAudioHandler) metricsHistory() *SoundMetricsHistory {
 	if soundMeter.history == nil {
 		soundMeter.history = NewSoundMetricsHistory(44100/4410*300, 2)
 	}
+	return soundMeter.history
+}
 
+func (soundMeter *SoundMeterAudioHandler) computeAudio(audio *Audio) {
 	soundMetrics := NewSoundMetrics(audio)
 
-	soundMeter.history.Update(soundMetrics)
+	soundMeter.metricsHistory().Update(soundMetrics)
 	soundMeter.sendMetrics(soundMetrics)
 }
 
@@ -112,7 +115,7 @@ func (soundMeter *SoundMeterAudioHandler) sendMetrics(metrics *SoundMetrics) {
 func (soundMeter SoundMeterAudioHandler) MarshalJSON() ([]byte, error) {
 	data := map[string]map[string]interface{}{
 		"history": map[string]interface{}{
-			"300": soundMeter.history.GlobalMetrics(),
+			"300": soundMeter.metricsHistory().GlobalMetrics(),
 		},
 	}
 	return json.Marshal(data)
