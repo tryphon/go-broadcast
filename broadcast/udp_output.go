@@ -1,8 +1,8 @@
 package broadcast
 
 import (
-	"net"
 	metrics "github.com/tryphon/go-metrics"
+	"net"
 )
 
 type UDPOutput struct {
