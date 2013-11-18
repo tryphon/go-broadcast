@@ -25,7 +25,13 @@ svg {
 
 </style>
 <body>
+
 <script src="http://d3js.org/d3.v3.min.js"></script>
+
+<input type="text" name="host" value="localhost:9000"/>
+<span id="value"></span>
+
+<div id="metrics_selection"/>
 
 <script>(function() {
 var n = 300,
@@ -51,7 +57,7 @@ var line = d3.svg.line()
     .x(function(d, i) { return x(now - (n - 1 - i) * duration); })
     .y(function(d, i) { return y(d); });
 
-var svg = d3.select("body").append("p").append("svg")
+var svg = d3.select("body").insert("p", "#metrics_selection").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
     .style("margin-left", -margin.left + "px")
@@ -113,9 +119,44 @@ function update(value) {
   data.shift();
 }
 
+previousCounterValues = d3.map({})
+
 function tick() {
-  d3.json("http://localhost:9000/metrics", function(metrics) {
-    update(metrics["buffer.Size"]["value"]);
+  host = d3.select("input[name='host']").property("value")
+  url = "http://" + host + "/metrics.json"
+
+  d3.json(url, function(metrics) {
+    metrics = d3.map(metrics)
+    metrics.forEach(function(key, value) {
+      if (d3.select("#metrics_selection input[value='" + key + "']").empty()) {
+        metricsSelector = d3.select("#metrics_selection").append("p").text(key)
+        metricsSelector.insert("input").attr("type","radio").attr("name", "selected_metric").attr("value",key)
+      }
+    })
+
+    checkedMetric = d3.select("#metrics_selection input:checked")
+    if (!checkedMetric.empty()) {
+      key = checkedMetric.attr("value")
+
+      metric = d3.map(metrics.get(key))
+      value = 0
+
+      if (metric.has("value")) {
+        value = metric.get("value")
+      } else {
+        currentCount = metric.get("count")
+        if (previousCounterValues.has(key)) {
+          value = currentCount - previousCounterValues.get(key)
+        }
+
+        previousCounterValues.set(key, currentCount)
+      }
+
+      d3.select("#value").text(value)
+      update(value)
+    } else {
+      update(0);
+    }
   });
 }
 
