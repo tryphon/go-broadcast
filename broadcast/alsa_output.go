@@ -44,6 +44,7 @@ func (output *AlsaOutput) Init() error {
 	output.coder = &InterleavedAudioCoder{SampleFormat: output.SampleFormat, ChannelCount: output.handle.Channels}
 
 	Log.Debugf("Alsa SampleFormat: %v", output.SampleFormat.Name())
+	Log.Debugf("Alsa SampleRate: %v", output.handle.SampleRate)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	alsa "github.com/tryphon/alsa-go"
+	metrics "github.com/tryphon/go-metrics"
 )
 
 type AlsaInput struct {
@@ -48,6 +49,7 @@ func (input *AlsaInput) Init() (err error) {
 	input.decoder = &InterleavedAudioCoder{SampleFormat: input.SampleFormat, ChannelCount: input.handle.Channels}
 
 	Log.Debugf("Alsa SampleFormat: %v", input.SampleFormat.Name())
+	Log.Debugf("Alsa SampleRate: %v", input.handle.SampleRate)
 
 	if input.BufferSampleCount == 0 {
 		input.BufferSampleCount = 1024
@@ -79,6 +81,8 @@ func (input *AlsaInput) Read() (err error) {
 		if err != nil {
 			return err
 		}
+
+		metrics.GetOrRegisterCounter("alsa.input.SampleCount", nil).Inc(int64(audio.SampleCount()))
 
 		input.audioHandler.AudioOut(audio)
 	}

@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"net"
+	metrics "github.com/tryphon/go-metrics"
 )
 
 type UDPInput struct {
@@ -52,6 +53,9 @@ func (input *UDPInput) Read() (err error) {
 		Log.Printf("Can't read data in UDP socket: %s", err.Error())
 		return err
 	}
+
+	metrics.GetOrRegisterCounter("udp.input.PacketCount", nil).Inc(1)
+	metrics.GetOrRegisterCounter("udp.input.Traffic", nil).Inc(int64(readLength))
 
 	audio, err := input.Decoder.Decode(input.buffer[:readLength])
 	if err != nil {

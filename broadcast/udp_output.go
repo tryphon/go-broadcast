@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"net"
+	metrics "github.com/tryphon/go-metrics"
 )
 
 type UDPOutput struct {
@@ -60,8 +61,12 @@ func (output *UDPOutput) audioOut(audio *Audio) {
 		Log.Printf("Can't encode audio: %s", err.Error())
 	}
 
-	_, err = output.connection.Write(bytes)
+	metrics.GetOrRegisterCounter("udp.output.PacketCount", nil).Inc(1)
+
+	wroteLength, err := output.connection.Write(bytes)
 	if err != nil {
 		Log.Printf("Can't write data in UDP socket: %s", err.Error())
 	}
+
+	metrics.GetOrRegisterCounter("udp.output.Traffic", nil).Inc(int64(wroteLength))
 }
