@@ -10,36 +10,42 @@ type UDPClientConfig struct {
 	Alsa AlsaInputConfig
 	Udp  UDPOutputConfig
 	Http HttpServerConfig
+	Log  LogConfig
 }
 
 func (config *UDPClientConfig) Flags(flags *flag.FlagSet) {
 	config.Alsa.Flags(flags, "alsa")
 	config.Udp.Flags(flags, "udp")
 	config.Http.Flags(flags, "http")
+	config.Log.Flags(flags, "log")
 }
 
 func (config *UDPClientConfig) Apply(alsaInput *AlsaInput, udpOutput *UDPOutput, httpServer *HttpServer) {
 	config.Alsa.Apply(alsaInput)
 	config.Udp.Apply(udpOutput)
 	config.Http.Apply(httpServer)
+	config.Log.Apply()
 }
 
 type UDPServerConfig struct {
 	Alsa AlsaOutputConfig
 	Udp  UDPInputConfig
 	Http HttpServerConfig
+	Log  LogConfig
 }
 
 func (config *UDPServerConfig) Flags(flags *flag.FlagSet) {
 	config.Alsa.Flags(flags, "alsa")
 	config.Udp.Flags(flags, "udp")
 	config.Http.Flags(flags, "http")
+	config.Log.Flags(flags, "log")
 }
 
 func (config *UDPServerConfig) Apply(alsaOutput *AlsaOutput, udpInput *UDPInput, httpServer *HttpServer) {
 	config.Alsa.Apply(alsaOutput)
 	config.Udp.Apply(udpInput)
 	config.Http.Apply(httpServer)
+	config.Log.Apply()
 }
 
 type AlsaInputConfig struct {
@@ -136,4 +142,19 @@ func (config *HttpServerConfig) Flags(flags *flag.FlagSet, prefix string) {
 
 func (config *HttpServerConfig) Apply(httpServer *HttpServer) {
 	httpServer.Bind = config.Bind
+}
+
+type LogConfig struct {
+	Debug  bool
+	Syslog bool
+}
+
+func (config *LogConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.BoolVar(&config.Debug, strings.Join([]string{prefix, "debug"}, "-"), false, "Enable debug messages")
+	flags.BoolVar(&config.Syslog, strings.Join([]string{prefix, "syslog"}, "-"), false, "Redirect messages to syslog")
+}
+
+func (config *LogConfig) Apply() {
+	Log.Debug = config.Debug
+	Log.Syslog = config.Syslog
 }
