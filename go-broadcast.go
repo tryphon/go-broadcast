@@ -163,7 +163,6 @@ func udpServer(arguments []string) {
 	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
 		Output: alsaOutput,
 	}
-
 	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
 
 	config.Apply(alsaOutput, udpInput, httpServer)
@@ -186,8 +185,12 @@ func udpServer(arguments []string) {
 	go udpInput.Run()
 
 	for {
-		audio := <-channel
-		soundMeterAudioHandler.AudioOut(audio)
+		select {
+		case audio := <-channel:
+			soundMeterAudioHandler.AudioOut(audio)
+		default:
+			soundMeterAudioHandler.AudioOut(broadcast.NewAudio(1024, 2))
+		}
 	}
 }
 
