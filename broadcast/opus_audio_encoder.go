@@ -29,7 +29,7 @@ func (encoder *OpusAudioEncoder) Destroy() {
 func (encoder *OpusAudioEncoder) Encode(audio *Audio) ([]byte, error) {
 	opusBytes := make([]byte, 2048)
 
-	encodedLength, err := encoder.opusEncoder.EncodeFloat(audio.InterleavedFloats(), audio.SampleCount(), opusBytes, 1280)
+	encodedLength, err := encoder.opusEncoder.EncodeFloat(audio.InterleavedFloats(), audio.SampleCount(), opusBytes, int32(len(opusBytes)))
 	if err != nil {
 		return nil, err
 	}
