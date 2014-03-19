@@ -15,8 +15,11 @@ type HttpServer struct {
 func (server *HttpServer) Init() error {
 	if server.Bind != "" {
 		http.HandleFunc("/metrics.json", server.metricsJSON)
-		http.HandleFunc("/soundmeter.json", server.soundMeterJSON)
-		http.Handle("/soundmeter.ws", websocket.Handler(server.soundMeterWebSocket))
+
+		if server.SoundMeterAudioHandler != nil {
+			http.HandleFunc("/soundmeter.json", server.soundMeterJSON)
+			http.Handle("/soundmeter.ws", websocket.Handler(server.soundMeterWebSocket))
+		}
 
 		go http.ListenAndServe(server.Bind, nil)
 	}
