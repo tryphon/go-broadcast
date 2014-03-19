@@ -52,6 +52,17 @@ func (audio *Audio) Sample(channel int, samplePosition int) float32 {
 	}
 }
 
+type AudioProcessor func(int, int, float32) float32
+
+func (audio *Audio) Process(processor AudioProcessor) {
+	for channel := 0; channel < audio.channelCount; channel++ {
+		for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
+			newSample := processor(channel, samplePosition, audio.Sample(channel, samplePosition))
+			audio.SetSample(channel, samplePosition, newSample)
+		}
+	}
+}
+
 func (audio *Audio) SetSample(channel int, samplePosition int, sample float32) {
 	audio.samples[channel][samplePosition] = sample
 }
