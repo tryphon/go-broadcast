@@ -99,7 +99,7 @@ func udpClient(arguments []string) {
 	config.Flags(flags)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] --udp-target=host:port udpclient\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s udpclient [options]\n", os.Args[0])
 		flags.PrintDefaults()
 	}
 
