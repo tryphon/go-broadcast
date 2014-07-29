@@ -158,3 +158,47 @@ func (config *LogConfig) Apply() {
 	Log.Debug = config.Debug
 	Log.Syslog = config.Syslog
 }
+
+type HttpSourceConfig struct {
+	Alsa AlsaInputConfig
+	Stream  HttpStreamOutputConfig
+	Http HttpServerConfig
+	Log  LogConfig
+}
+
+func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
+	config.Alsa.Flags(flags, "alsa")
+	config.Stream.Flags(flags, "stream")
+	config.Http.Flags(flags, "http")
+	config.Log.Flags(flags, "log")
+}
+
+func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *HttpStreamOutput, httpServer *HttpServer) {
+	config.Alsa.Apply(alsaInput)
+	config.Stream.Apply(httpStreamOutput)
+	config.Http.Apply(httpServer)
+	config.Log.Apply()
+}
+
+type HttpStreamOutputConfig struct {
+	Target string
+	// Server string
+	// MountPoint string
+	// Port int
+	// Password string
+	// FIXME
+	Quality int
+}
+
+func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
+	// flags.StringVar(&config.Server, strings.Join([]string{prefix, "server"}, "-"), "", "The stream server hostname")
+	// flags.StringVar(&config.MountPoint, strings.Join([]string{prefix, "mount-point"}, "-"), "", "The stream mount point")
+	// flags.IntVar(&config.Port, strings.Join([]string{prefix, "port"}, "-"), 8000, "The stream server port")
+	// flags.StringVar(&config.Password, strings.Join([]string{prefix, "password"}, "-"), "", "The stream password")
+	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), 5, "The stream quality")
+}
+
+func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
+	httpStreamOutput.Target = config.Target
+}

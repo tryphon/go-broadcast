@@ -26,6 +26,8 @@ func main() {
 	switch command {
 	case "httpclient":
 		httpClient(os.Args[2:])
+	case "httpSource":
+		httpSource(os.Args[2:])
 	case "udpclient":
 		udpClient(os.Args[2:])
 	case "udpserver":
@@ -90,6 +92,50 @@ func backup(arguments []string) {
 		audio := <-channel
 		timedFileOutput.AudioOut(audio)
 	}
+}
+
+func httpSource(arguments []string) {
+	config := broadcast.HttpSourceConfig{}
+
+	flags := flag.NewFlagSet("httpsource", flag.ExitOnError)
+	config.Flags(flags)
+
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s httpsource [options]\n", os.Args[0])
+		flags.PrintDefaults()
+	}
+
+	flags.Parse(arguments)
+
+	if config.Stream.Target == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
+
+	broadcast.Log.Printf("Config: %v", config)
+
+	alsaInput := &broadcast.AlsaInput{}
+	httpStreamOutput := &broadcast.HttpStreamOutput{}
+
+	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: httpStreamOutput,
+	}
+	alsaInput.SetAudioHandler(soundMeterAudioHandler)
+
+	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+
+	config.Apply(alsaInput, httpStreamOutput, httpServer)
+
+	err := httpStreamOutput.Init()
+	checkError(err)
+
+	// err = alsaInput.Init()
+	// checkError(err)
+
+	// err = httpServer.Init()
+	// checkError(err)
+
+	// alsaInput.Run()
 }
 
 func udpClient(arguments []string) {
