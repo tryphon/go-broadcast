@@ -203,6 +203,7 @@ func httpClient(arguments []string) {
 	var statusLoop, httpReadTimeout, httpWaitOnError time.Duration
 	var httpUsername, httpPassword string
 	var alsaDevice /*, alsaSampleFormat */ string
+	var alsaChannels int
 
 	flags.Float64Var(&lowAdjustLimit, "low-adjust-limit", 0, "Limit of low adjust buffer (in seconds)")
 	flags.Float64Var(&lowAdjustThreshold, "low-adjust-threshold", 3, "Limit of low adjust buffer (in seconds)")
@@ -221,7 +222,8 @@ func httpClient(arguments []string) {
 	flags.StringVar(&httpUsername, "http-username", "", "Username used for http authentification")
 	flags.StringVar(&httpPassword, "http-password", "", "Password used for http authentification")
 
-	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to record sound")
+	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to play sound")
+	flags.IntVar(&alsaChannels, "alsa-channels", 2, "The channel count used with alsa device")
 	// flags.StringVar(&alsaSampleFormat, "alsa-sample-format", "auto", "The sample format used to record sound (s16le, s32le, s32be)")
 
 	var fixedRateTolerance float64
@@ -290,7 +292,7 @@ func httpClient(arguments []string) {
 	err := httpInput.Init()
 	checkError(err)
 
-	alsaOutput := broadcast.AlsaOutput{Device: alsaDevice, SampleRate: sampleRate}
+	alsaOutput := broadcast.AlsaOutput{Device: alsaDevice, SampleRate: sampleRate, Channels: alsaChannels}
 	var outputHandler broadcast.AudioHandler = &alsaOutput
 
 	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{Output: outputHandler}

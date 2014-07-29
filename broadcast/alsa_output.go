@@ -11,6 +11,7 @@ type AlsaOutput struct {
 	Device       string
 	SampleRate   int
 	SampleFormat SampleFormat
+	Channels     int
 
 	coder *InterleavedAudioCoder
 }
@@ -28,12 +29,15 @@ func (output *AlsaOutput) Init() error {
 	if output.SampleRate == 0 {
 		output.SampleRate = 44100
 	}
+	if output.Channels == 0 {
+		output.Channels = 2
+	}
 
 	if output.SampleFormat != nil {
 		output.handle.SampleFormat = ToAlsaSampleFormat(output.SampleFormat)
 	}
 	output.handle.SampleRate = output.SampleRate
-	output.handle.Channels = 2
+	output.handle.Channels = output.Channels
 
 	err = output.handle.ApplyHwParams()
 	if err != nil {
