@@ -1,5 +1,4 @@
 package broadcast
-
 import (
 	"bytes"
 )
@@ -11,9 +10,13 @@ type InterleavedAudioCoder struct {
 
 func (encoder *InterleavedAudioCoder) Encode(audio *Audio) ([]byte, error) {
 	buffer := &bytes.Buffer{}
+	channelCount := encoder.ChannelCount
+	if channelCount == 0 {
+		channelCount = audio.ChannelCount()
+	}
 
 	for samplePosition := 0; samplePosition < audio.sampleCount; samplePosition++ {
-		for channel := 0; channel < audio.ChannelCount(); channel++ {
+		for channel := 0; channel < channelCount; channel++ {
 			sample := audio.Sample(channel, samplePosition)
 			encoder.SampleFormat.Write(buffer, sample)
 		}

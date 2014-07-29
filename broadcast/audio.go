@@ -45,7 +45,7 @@ func (audio *Audio) Samples(channel int) []float32 {
 }
 
 func (audio *Audio) Sample(channel int, samplePosition int) float32 {
-	if audio.samples[channel] != nil {
+	if channel < audio.channelCount && audio.samples[channel] != nil {
 		return audio.samples[channel][samplePosition]
 	} else {
 		return 0
