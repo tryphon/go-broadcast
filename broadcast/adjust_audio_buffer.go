@@ -7,7 +7,8 @@ import (
 )
 
 type AdjustAudioBuffer struct {
-	Buffer AudioBuffer
+	Buffer       AudioBuffer
+	ChannelCount int
 
 	LimitSampleCount     uint32
 	ThresholdSampleCount uint32
@@ -46,6 +47,10 @@ func (pseudoBuffer *AdjustAudioBuffer) removeAudio() bool {
 }
 
 func (pseudoBuffer *AdjustAudioBuffer) AudioOut(audio *Audio) {
+	if pseudoBuffer.ChannelCount == 0 {
+		pseudoBuffer.ChannelCount = audio.ChannelCount()
+	}
+
 	pseudoBuffer.Buffer.AudioOut(audio)
 
 	pseudoBuffer.adjustmentCounter()
@@ -88,7 +93,7 @@ func (pseudoBuffer *AdjustAudioBuffer) Read() (audio *Audio) {
 	pseudoBuffer.adjustmentCounter()
 
 	if pseudoBuffer.addAudio() && pseudoBuffer.adjust() {
-		return pseudoBuffer.logAdjustment(NewAudio(1024, 2))
+		return pseudoBuffer.logAdjustment(NewAudio(1024, pseudoBuffer.ChannelCount))
 	} else {
 		return pseudoBuffer.Buffer.Read()
 	}

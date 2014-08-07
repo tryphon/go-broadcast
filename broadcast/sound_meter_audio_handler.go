@@ -53,7 +53,7 @@ func (metrics *SoundMetrics) MarshalJSON() ([]byte, error) {
 func (soundMeter *SoundMeterAudioHandler) AudioOut(audio *Audio) {
 	if soundMeter.resizeAudio == nil {
 		audioHandler := AudioHandlerFunc(soundMeter.computeAudio)
-		soundMeter.resizeAudio = &ResizeAudio{SampleCount: 4410, ChannelCount: 2, Output: audioHandler}
+		soundMeter.resizeAudio = &ResizeAudio{SampleCount: 4410, Output: audioHandler}
 	}
 
 	soundMeter.resizeAudio.AudioOut(audio)

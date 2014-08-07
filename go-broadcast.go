@@ -418,9 +418,8 @@ func httpClient(arguments []string) {
 
 	httpInput.SetAudioHandler(
 		&broadcast.ResizeAudio{
-			Output:       audioBuffer,
-			SampleCount:  1024,
-			ChannelCount: 2,
+			Output:      audioBuffer,
+			SampleCount: 1024,
 		},
 	)
 
@@ -486,7 +485,7 @@ func httpClient(arguments []string) {
 	for {
 		audio := audioBuffer.Read()
 		if audio == nil {
-			audio = broadcast.NewAudio(1024, 2)
+			audio = broadcast.NewAudio(1024, alsaChannels)
 			blankDuration += uint32(audio.SampleCount())
 		} else {
 			if blankDuration > 0 {
