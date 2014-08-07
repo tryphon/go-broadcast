@@ -53,6 +53,7 @@ type AlsaInputConfig struct {
 	SampleRate     int
 	BufferDuration time.Duration
 	SampleFormat   string
+	Channels       int
 }
 
 func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
@@ -60,6 +61,7 @@ func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
 	flags.IntVar(&config.SampleRate, strings.Join([]string{prefix, "sample-rate"}, "-"), 44100, "Sample rate")
 	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 250*time.Millisecond, "The alsa buffer duration")
 	flags.StringVar(&config.SampleFormat, strings.Join([]string{prefix, "sample-format"}, "-"), "auto", "The sample format used to record sound (s16le, s32le, s32be)")
+	flags.IntVar(&config.Channels, strings.Join([]string{prefix, "channels"}, "-"), 2, "The channels count to be used on alsa device")
 }
 
 func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
@@ -69,6 +71,7 @@ func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
 	bufferSampleCount := int(float64(config.SampleRate) * config.BufferDuration.Seconds())
 	alsaInput.BufferSampleCount = bufferSampleCount
 	alsaInput.SampleFormat = ParseSampleFormat(config.SampleFormat)
+	alsaInput.Channels = config.Channels
 }
 
 type AlsaOutputConfig struct {
@@ -157,4 +160,45 @@ func (config *LogConfig) Flags(flags *flag.FlagSet, prefix string) {
 func (config *LogConfig) Apply() {
 	Log.Debug = config.Debug
 	Log.Syslog = config.Syslog
+}
+
+type HttpSourceConfig struct {
+	Alsa   AlsaInputConfig
+	Stream HttpStreamOutputConfig
+	Http   HttpServerConfig
+	Log    LogConfig
+}
+
+func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
+	config.Alsa.Flags(flags, "alsa")
+	config.Stream.Flags(flags, "stream")
+	config.Http.Flags(flags, "http")
+	config.Log.Flags(flags, "log")
+}
+
+func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *HttpStreamOutput, httpServer *HttpServer) {
+	config.Alsa.Apply(alsaInput)
+	config.Stream.Apply(httpStreamOutput)
+	config.Http.Apply(httpServer)
+	config.Log.Apply()
+}
+
+type HttpStreamOutputConfig struct {
+	Target string
+	// FIXME
+	Quality int
+}
+
+func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
+	// flags.StringVar(&config.Server, strings.Join([]string{prefix, "server"}, "-"), "", "The stream server hostname")
+	// flags.StringVar(&config.MountPoint, strings.Join([]string{prefix, "mount-point"}, "-"), "", "The stream mount point")
+	// flags.IntVar(&config.Port, strings.Join([]string{prefix, "port"}, "-"), 8000, "The stream server port")
+	// flags.StringVar(&config.Password, strings.Join([]string{prefix, "password"}, "-"), "", "The stream password")
+	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), 5, "The stream quality")
+}
+
+func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
+	httpStreamOutput.Target = config.Target
+	httpStreamOutput.Quality = float32(config.Quality / 10.0)
 }

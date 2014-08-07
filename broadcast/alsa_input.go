@@ -11,6 +11,7 @@ type AlsaInput struct {
 	SampleRate        int
 	BufferSampleCount int
 	SampleFormat      SampleFormat
+	Channels          int
 
 	audioHandler AudioHandler
 
@@ -38,7 +39,7 @@ func (input *AlsaInput) Init() (err error) {
 		input.handle.SampleFormat = ToAlsaSampleFormat(input.SampleFormat)
 	}
 	input.handle.SampleRate = input.SampleRate
-	input.handle.Channels = 2
+	input.handle.Channels = input.Channels
 
 	err = input.handle.ApplyHwParams()
 	if err != nil {

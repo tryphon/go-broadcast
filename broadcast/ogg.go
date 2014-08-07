@@ -3,6 +3,7 @@ package broadcast
 import (
 	ogg "github.com/tryphon/go-ogg"
 	"io"
+	"math/rand"
 )
 
 type OggDecoder struct {
@@ -20,6 +21,10 @@ func (decoder *OggDecoder) Reset() {
 	decoder.og.Reset()
 
 	decoder.oss.SerialNo = 0
+}
+
+type OggPacketHandler interface {
+	PacketAvailable(packet *ogg.Packet)
 }
 
 type OggHandler interface {
@@ -83,4 +88,49 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 	result = true
 	return
+}
+
+type OggEncoder struct {
+	Writer  io.Writer
+	Encoder VorbisEncoder
+
+	oss ogg.StreamState // take physical pages, weld into a logical stream of packets
+	// og  ogg.Page        // one Ogg bitstream page. Vorbis packets are inside
+	// op  ogg.Packet      // one raw packet of data for decode
+}
+
+func (encoder *OggEncoder) Init() {
+	encoder.oss.Init(rand.Int31())
+	encoder.Encoder.Init()
+	encoder.Flush()
+}
+
+func (encoder *OggEncoder) PacketAvailable(packet *ogg.Packet) {
+	encoder.oss.PacketIn(packet)
+}
+
+func (encoder *OggEncoder) Flush() {
+	var page ogg.Page
+	for encoder.oss.Flush(&page) {
+		encoder.write(&page)
+	}
+}
+
+func (encoder *OggEncoder) writeAvailablePages() {
+	var page ogg.Page
+	for encoder.oss.PageOut(&page) {
+		encoder.write(&page)
+	}
+}
+
+func (encoder *OggEncoder) write(page *ogg.Page) {
+	if encoder.Writer != nil {
+		encoder.Writer.Write(page.Header)
+		encoder.Writer.Write(page.Body)
+	}
+}
+
+func (encoder *OggEncoder) AudioOut(audio *Audio) {
+	encoder.Encoder.AudioOut(audio)
+	encoder.writeAvailablePages()
 }
