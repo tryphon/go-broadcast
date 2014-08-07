@@ -1,9 +1,11 @@
 package broadcast
 
 import (
+	"errors"
 	metrics "github.com/tryphon/go-metrics"
 	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
+	"github.com/tryphon/go-vorbis/vorbisenc"
 )
 
 type VorbisDecoder struct {
@@ -104,4 +106,86 @@ func (decoder *VorbisDecoder) newAudio(pcmArray ***float32, sampleCount int) *Au
 		}
 	}
 	return audio
+}
+
+type VorbisEncoder struct {
+	Quality      float32
+	ChannelCount int32
+	SampleRate   int32
+
+	PacketHandler OggPacketHandler
+
+	vi vorbis.Info     // struct that stores all the static vorbis bitstream settings
+	vc vorbis.Comment  // struct that stores all the user comments
+	vd vorbis.DspState // central working state for the packet PCM decoder
+	vb vorbis.Block    // local working space for packet PCM decode
+}
+
+func (encoder *VorbisEncoder) Init() error {
+	encoder.vi.Init()
+
+	if encoder.ChannelCount == 0 {
+		encoder.ChannelCount = 2
+	}
+	if encoder.SampleRate == 0 {
+		encoder.SampleRate = 44100
+	}
+	if vorbisenc.InitVbr(&encoder.vi, encoder.ChannelCount, encoder.SampleRate, encoder.Quality) != 0 {
+		return errors.New("Can't initialize vorbis encoder")
+	}
+
+	if vorbis.AnalysisInit(&encoder.vd, &encoder.vi) != 0 {
+		return errors.New("Can't initialize vorbis analysis")
+	}
+
+	if encoder.vb.Init(&encoder.vd) != 0 {
+		return errors.New("Can't initialize vorbis block")
+	}
+
+	var (
+		header     ogg.Packet
+		headerComm ogg.Packet
+		headerCode ogg.Packet
+	)
+
+	encoder.vc.Init()
+	encoder.vc.AddTag("ENCODER", "Go Broadcast v0")
+
+	vorbis.AnalysisHeaderOut(&encoder.vd, &encoder.vc, &header, &headerComm, &headerCode)
+	encoder.sendPacket(&header)
+	encoder.sendPacket(&headerComm)
+	encoder.sendPacket(&headerCode)
+
+	encoder.vc.Clear()
+
+	return nil
+}
+
+func (encoder *VorbisEncoder) sendPacket(packet *ogg.Packet) {
+	if encoder.PacketHandler != nil {
+		encoder.PacketHandler.PacketAvailable(packet)
+	}
+}
+
+func (encoder *VorbisEncoder) AudioOut(audio *Audio) {
+	buffer := vorbis.AnalysisBuffer(&encoder.vd, audio.SampleCount())
+
+	for samplePosition := 0; samplePosition < audio.SampleCount(); samplePosition++ {
+		for channel := 0; channel < audio.ChannelCount(); channel++ {
+			buffer[channel][samplePosition] = audio.Sample(channel, samplePosition)
+		}
+	}
+
+	vorbis.AnalysisWrote(&encoder.vd, audio.SampleCount())
+
+	for vorbis.AnalysisBlockOut(&encoder.vd, &encoder.vb) == 1 {
+		vorbis.Analysis(&encoder.vb, nil)
+		vorbis.BitrateAddBlock(&encoder.vb)
+
+		var packet ogg.Packet
+
+		for vorbis.BitrateFlushPacket(&encoder.vd, &packet) != 0 {
+			encoder.sendPacket(&packet)
+		}
+	}
 }

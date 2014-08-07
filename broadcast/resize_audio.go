@@ -32,6 +32,10 @@ func (resize *ResizeAudio) maxSampleCount(sampleCount int) int {
 }
 
 func (resize *ResizeAudio) AudioOut(audio *Audio) {
+	if resize.ChannelCount == 0 {
+		resize.ChannelCount = audio.ChannelCount()
+	}
+
 	if resize.pendingAudio == nil {
 		resize.newPendingAudio()
 	}

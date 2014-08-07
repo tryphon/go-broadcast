@@ -17,6 +17,16 @@ func (f AudioHandlerFunc) AudioOut(audio *Audio) {
 	f(audio)
 }
 
+type AudioProvider interface {
+	Read() *Audio
+}
+
+type AudioProviderFunc func() *Audio
+
+func (f AudioProviderFunc) Read() *Audio {
+	return f()
+}
+
 type Audio struct {
 	samples      [][]float32
 	channelCount int

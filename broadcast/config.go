@@ -53,6 +53,7 @@ type AlsaInputConfig struct {
 	SampleRate     int
 	BufferDuration time.Duration
 	SampleFormat   string
+	Channels       int
 }
 
 func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
@@ -60,6 +61,7 @@ func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
 	flags.IntVar(&config.SampleRate, strings.Join([]string{prefix, "sample-rate"}, "-"), 44100, "Sample rate")
 	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 250*time.Millisecond, "The alsa buffer duration")
 	flags.StringVar(&config.SampleFormat, strings.Join([]string{prefix, "sample-format"}, "-"), "auto", "The sample format used to record sound (s16le, s32le, s32be)")
+	flags.IntVar(&config.Channels, strings.Join([]string{prefix, "channels"}, "-"), 2, "The channels count to be used on alsa device")
 }
 
 func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
@@ -69,6 +71,7 @@ func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
 	bufferSampleCount := int(float64(config.SampleRate) * config.BufferDuration.Seconds())
 	alsaInput.BufferSampleCount = bufferSampleCount
 	alsaInput.SampleFormat = ParseSampleFormat(config.SampleFormat)
+	alsaInput.Channels = config.Channels
 }
 
 type AlsaOutputConfig struct {
@@ -160,10 +163,10 @@ func (config *LogConfig) Apply() {
 }
 
 type HttpSourceConfig struct {
-	Alsa AlsaInputConfig
-	Stream  HttpStreamOutputConfig
-	Http HttpServerConfig
-	Log  LogConfig
+	Alsa   AlsaInputConfig
+	Stream HttpStreamOutputConfig
+	Http   HttpServerConfig
+	Log    LogConfig
 }
 
 func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
@@ -182,10 +185,6 @@ func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *Ht
 
 type HttpStreamOutputConfig struct {
 	Target string
-	// Server string
-	// MountPoint string
-	// Port int
-	// Password string
 	// FIXME
 	Quality int
 }
@@ -201,4 +200,5 @@ func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) 
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
+	httpStreamOutput.Quality = float32(config.Quality / 10.0)
 }
