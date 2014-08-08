@@ -95,8 +95,6 @@ type OggEncoder struct {
 	Encoder VorbisEncoder
 
 	oss ogg.StreamState // take physical pages, weld into a logical stream of packets
-	// og  ogg.Page        // one Ogg bitstream page. Vorbis packets are inside
-	// op  ogg.Packet      // one raw packet of data for decode
 }
 
 func (encoder *OggEncoder) Init() {
