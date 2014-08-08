@@ -114,20 +114,22 @@ func httpSource(arguments []string) {
 
 	broadcast.Log.Printf("Config: %v", config)
 
-	// audioBuffer := &broadcast.MutexAudioBuffer{
-	// 	Buffer: &broadcast.UnfillAudioBuffer{
-	// 		Buffer:            &broadcast.MemoryAudioBuffer{},
-	// 		MaxSampleCount:    5 * 44100,
-	// 		UnfillSampleCount: 1024,
-	// 	},
-	// }
+	audioBuffer := &broadcast.MutexAudioBuffer{
+		Buffer: &broadcast.UnfillAudioBuffer{
+			Buffer:            &broadcast.MemoryAudioBuffer{},
+			MaxSampleCount:    5 * 44100,
+			UnfillSampleCount: 44100,
+		},
+	}
+	audioHandler := audioBuffer
 
-	channel := make(chan *broadcast.Audio, 100)
-	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
-		channel <- audio
-	})
 	audioProvider := broadcast.AudioProviderFunc(func() *broadcast.Audio {
-		return <-channel
+		audio := audioBuffer.Read()
+		for audio == nil {
+			time.Sleep(500 * time.Millisecond)
+			audio = audioBuffer.Read()
+		}
+		return audio
 	})
 
 	alsaInput := &broadcast.AlsaInput{}
@@ -148,10 +150,10 @@ func httpSource(arguments []string) {
 	httpStreamOutput.ChannelCount = int32(alsaInput.Channels)
 	httpStreamOutput.SampleRate = int32(alsaInput.SampleRate)
 
-	err := httpStreamOutput.Init()
+	err := alsaInput.Init()
 	checkError(err)
 
-	err = alsaInput.Init()
+	err = httpStreamOutput.Init()
 	checkError(err)
 
 	err = httpServer.Init()
