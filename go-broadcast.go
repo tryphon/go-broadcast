@@ -118,7 +118,7 @@ func httpSource(arguments []string) {
 		Buffer: &broadcast.UnfillAudioBuffer{
 			Buffer:            &broadcast.MemoryAudioBuffer{},
 			MaxSampleCount:    5 * 44100,
-			UnfillSampleCount: 44100,
+			UnfillSampleCount: 1024,
 		},
 	}
 	audioHandler := audioBuffer
