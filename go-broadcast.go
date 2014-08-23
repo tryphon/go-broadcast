@@ -43,48 +43,50 @@ func main() {
 }
 
 func backup(arguments []string) {
+	config := broadcast.BackupConfig{}
+
 	flags := flag.NewFlagSet("backup", flag.ExitOnError)
-
-	var fileDuration, bufferDuration time.Duration
-	var sampleRate int
-	var alsaDevice, alsaSampleFormat string
-
-	flags.StringVar(&alsaDevice, "alsa-device", "default", "The alsa device used to record sound")
-	flags.StringVar(&alsaSampleFormat, "alsa-sample-format", "auto", "The sample format used to record sound (s16le, s32le, s32be)")
-	flags.DurationVar(&fileDuration, "file-duration", 5*time.Minute, "Change file duration")
-	flags.DurationVar(&bufferDuration, "buffer-duration", 250*time.Millisecond, "Buffer duration")
-	flags.IntVar(&sampleRate, "sample-rate", 44100, "Sample rate")
+	config.Flags(flags)
 
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] backup <root-directory>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s backup [options]\n", os.Args[0])
 		flags.PrintDefaults()
 	}
 
 	flags.Parse(arguments)
 
-	if flags.NArg() != 1 {
+	if config.Files.Root == "" {
 		flag.Usage()
 		os.Exit(1)
 	}
 
-	var rootDirectory string = flags.Arg(0)
+	broadcast.Log.Printf("Config: %v", config)
 
-	bufferSampleCount := int(float64(sampleRate) * bufferDuration.Seconds())
-	broadcast.Log.Debugf("Alsa bufferSampleCount: %d", bufferSampleCount)
+	alsaInput := &broadcast.AlsaInput{}
 
-	alsaInput := broadcast.AlsaInput{Device: alsaDevice, BufferSampleCount: bufferSampleCount, SampleRate: sampleRate, SampleFormat: broadcast.ParseSampleFormat(alsaSampleFormat)}
-	err := alsaInput.Init()
-	checkError(err)
-
-	timedFileOutput := &broadcast.TimedFileOutput{RootDirectory: rootDirectory}
-	timedFileOutput.SetFileDuration(fileDuration)
-	timedFileOutput.SetSampleRate(sampleRate)
+	timedFileOutput := &broadcast.TimedFileOutput{}
 
 	channel := make(chan *broadcast.Audio, 100)
 	audioHandler := broadcast.AudioHandlerFunc(func(audio *broadcast.Audio) {
 		channel <- audio
 	})
-	alsaInput.SetAudioHandler(audioHandler)
+
+	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
+		Output: audioHandler,
+	}
+	alsaInput.SetAudioHandler(soundMeterAudioHandler)
+
+	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+
+	config.Apply(alsaInput, timedFileOutput, httpServer)
+
+	timedFileOutput.SetSampleRate(alsaInput.SampleRate)
+
+	err := alsaInput.Init()
+	checkError(err)
+
+	err = httpServer.Init()
+	checkError(err)
 
 	go alsaInput.Run()
 

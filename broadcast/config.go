@@ -191,14 +191,46 @@ type HttpStreamOutputConfig struct {
 
 func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
-	// flags.StringVar(&config.Server, strings.Join([]string{prefix, "server"}, "-"), "", "The stream server hostname")
-	// flags.StringVar(&config.MountPoint, strings.Join([]string{prefix, "mount-point"}, "-"), "", "The stream mount point")
-	// flags.IntVar(&config.Port, strings.Join([]string{prefix, "port"}, "-"), 8000, "The stream server port")
-	// flags.StringVar(&config.Password, strings.Join([]string{prefix, "password"}, "-"), "", "The stream password")
 	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), 5, "The stream quality")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
 	httpStreamOutput.Quality = float32(config.Quality / 10.0)
+}
+
+type BackupConfig struct {
+	Alsa  AlsaInputConfig
+	Files TimedFileOutputConfig
+	Http  HttpServerConfig
+	Log   LogConfig
+}
+
+func (config *BackupConfig) Flags(flags *flag.FlagSet) {
+	config.Alsa.Flags(flags, "alsa")
+	config.Files.Flags(flags, "files")
+	config.Http.Flags(flags, "http")
+	config.Log.Flags(flags, "log")
+}
+
+func (config *BackupConfig) Apply(alsaInput *AlsaInput, timedFileOutput *TimedFileOutput, httpServer *HttpServer) {
+	config.Alsa.Apply(alsaInput)
+	config.Files.Apply(timedFileOutput)
+	config.Http.Apply(httpServer)
+	config.Log.Apply()
+}
+
+type TimedFileOutputConfig struct {
+	Root     string
+	Duration time.Duration
+}
+
+func (config *TimedFileOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Root, strings.Join([]string{prefix, "root"}, "-"), "", "The root directory used to save files")
+	flags.DurationVar(&config.Duration, strings.Join([]string{prefix, "duration"}, "-"), 5*time.Minute, "The file duration")
+}
+
+func (config *TimedFileOutputConfig) Apply(output *TimedFileOutput) {
+	output.RootDirectory = config.Root
+	output.SetFileDuration(config.Duration)
 }
