@@ -1,13 +1,17 @@
 package broadcast
 
 import (
+	"flag"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 	"time"
 )
 
 type TimedFileOutput struct {
 	RootDirectory string
+	CloseHandler  string
 
 	fileDuration time.Duration
 	sampleRate   int
@@ -59,10 +63,27 @@ func (output *TimedFileOutput) checkFileSampleCount() {
 }
 
 func (output *TimedFileOutput) closeFile() (err error) {
-	Log.Printf("Close current file (%s)", output.currentFile.Path())
+	filename := output.currentFile.Path()
+	Log.Printf("Close current file (%s)", filename)
 	output.currentFile.Close()
 	output.currentFile = nil
+
+	output.invokeCloseHandler(filename)
+
 	return nil
+}
+
+func (output *TimedFileOutput) invokeCloseHandler(filename string) {
+	if output.CloseHandler != "" {
+		go func() {
+			Log.Debugf("Invoke close handler : %s %s", output.CloseHandler, filename)
+			command := exec.Command(output.CloseHandler, filename)
+			err := command.Run()
+			if err != nil {
+				Log.Printf("Can't invoke close handler : %v", err)
+			}
+		}()
+	}
 }
 
 func (output *TimedFileOutput) newFile(now time.Time) error {
@@ -143,4 +164,22 @@ func (output *TimedFileOutput) AudioOut(audio *Audio) {
 			output.writeQuarantineUntil = time.Time{}
 		}
 	}
+}
+
+type TimedFileOutputConfig struct {
+	Root         string
+	Duration     time.Duration
+	CloseHandler string
+}
+
+func (config *TimedFileOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Root, strings.Join([]string{prefix, "root"}, "-"), "", "The root directory used to save files")
+	flags.StringVar(&config.CloseHandler, strings.Join([]string{prefix, "close-handler"}, "-"), "", "A executable invoked when each file is closed")
+	flags.DurationVar(&config.Duration, strings.Join([]string{prefix, "duration"}, "-"), 5*time.Minute, "The file duration")
+}
+
+func (config *TimedFileOutputConfig) Apply(output *TimedFileOutput) {
+	output.RootDirectory = config.Root
+	output.SetFileDuration(config.Duration)
+	output.CloseHandler = config.CloseHandler
 }

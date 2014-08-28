@@ -140,6 +140,36 @@ func TestTimedFileOutput_closeFile(t *testing.T) {
 	}
 }
 
+func TestTimedFileOutput_closeFile_handler(t *testing.T) {
+	file, err := tempSndFile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Remove(file.Path())
+
+	output := TimedFileOutput{CloseHandler: "testdata/close-handler"}
+	output.currentFile = file
+
+	closeHandlerOutputFile := "/tmp/go-broadcast-close-handler-output.log"
+
+	err = output.closeFile()
+	if err != nil {
+		t.Errorf("Should not return an error")
+	}
+
+	handleOutputBytes, err := ioutil.ReadFile(closeHandlerOutputFile)
+	if err != nil {
+		t.Errorf("Can't read handler output")
+	}
+	defer os.Remove(closeHandlerOutputFile)
+
+	handleOutput := string(handleOutputBytes)
+
+	if handleOutput != file.Path() {
+		t.Errorf(" :\n got: %v\nwant: %v", handleOutput, file.Path())
+	}
+}
+
 func TestTimedFileOutput_newFile(t *testing.T) {
 	tempDir, err := ioutil.TempDir("", "timedfileoutput")
 	if err != nil {

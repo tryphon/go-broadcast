@@ -219,18 +219,3 @@ func (config *BackupConfig) Apply(alsaInput *AlsaInput, timedFileOutput *TimedFi
 	config.Http.Apply(httpServer)
 	config.Log.Apply()
 }
-
-type TimedFileOutputConfig struct {
-	Root     string
-	Duration time.Duration
-}
-
-func (config *TimedFileOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
-	flags.StringVar(&config.Root, strings.Join([]string{prefix, "root"}, "-"), "", "The root directory used to save files")
-	flags.DurationVar(&config.Duration, strings.Join([]string{prefix, "duration"}, "-"), 5*time.Minute, "The file duration")
-}
-
-func (config *TimedFileOutputConfig) Apply(output *TimedFileOutput) {
-	output.RootDirectory = config.Root
-	output.SetFileDuration(config.Duration)
-}
