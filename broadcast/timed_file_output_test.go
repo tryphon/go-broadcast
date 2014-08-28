@@ -157,6 +157,8 @@ func TestTimedFileOutput_closeFile_handler(t *testing.T) {
 		t.Errorf("Should not return an error")
 	}
 
+	time.Sleep(500 * time.Millisecond)
+
 	handleOutputBytes, err := ioutil.ReadFile(closeHandlerOutputFile)
 	if err != nil {
 		t.Errorf("Can't read handler output")
