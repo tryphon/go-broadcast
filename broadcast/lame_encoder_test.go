@@ -88,6 +88,7 @@ func TestLameEncoder_AudioOut(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(buffer.Bytes(), expectedBytes) {
+		ioutil.WriteFile("lame_encoder_sine_output.mp3", buffer.Bytes(), 644)
 		t.Errorf("Encoded bytes doesn't match expected output")
 	}
 }
