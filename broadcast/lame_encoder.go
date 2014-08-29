@@ -79,8 +79,6 @@ func (encoder *LameEncoder) AudioOut(audio *Audio) {
 		C.int(estimatedSize),
 	))
 
-	Log.Printf("%d %d %d", audio.SampleCount(), estimatedSize, encodedByteCount)
-
 	encoder.Writer.Write(encodedBytes[0:encodedByteCount])
 }
 
