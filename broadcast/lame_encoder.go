@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"errors"
+	"io"
 	"math"
 	"runtime"
 )
@@ -25,28 +26,38 @@ type LameEncoder struct {
 	ChannelCount int
 	SampleRate   int
 
+	Writer io.Writer
+
 	handle *C.lame_global_flags
 }
 
 func (encoder *LameEncoder) Init() error {
+	if encoder.ChannelCount == 0 {
+		encoder.ChannelCount = 2
+	}
+	if encoder.SampleRate == 0 {
+		encoder.SampleRate = 44100
+	}
+
 	handle := C.lame_init()
 	if handle == nil {
 		return errors.New("Can't initialize lame")
 	}
 
-	encoder.handle = handle
-	runtime.SetFinalizer(encoder, finalizeLameEncoder)
+	C.lame_set_num_channels(handle, C.int(encoder.ChannelCount))
+	C.lame_set_in_samplerate(handle, C.int(encoder.SampleRate))
 
-	C.lame_set_num_channels(encoder.handle, C.int(encoder.ChannelCount))
-	C.lame_set_in_samplerate(encoder.handle, C.int(encoder.SampleRate))
+	C.lame_set_quality(handle, C.int(encoder.LameQuality()))
+	C.lame_set_mode(handle, (C.MPEG_mode)(encoder.LameMode()))
 
-	C.lame_set_quality(encoder.handle, C.int(encoder.LameQuality()))
-	C.lame_set_mode(encoder.handle, (C.MPEG_mode)(encoder.LameMode()))
-
-	initResults := C.lame_init_params(encoder.handle)
+	initResults := C.lame_init_params(handle)
 	if initResults == -1 {
 		return errors.New("Can't setup lame")
 	}
+
+	encoder.handle = handle
+	runtime.SetFinalizer(encoder, finalizeLameEncoder)
+
 	return nil
 }
 
