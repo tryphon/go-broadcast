@@ -3,7 +3,6 @@ package broadcast
 import (
 	"bytes"
 	"io/ioutil"
-	"reflect"
 	"testing"
 )
 
