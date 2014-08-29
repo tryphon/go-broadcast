@@ -10,7 +10,7 @@ func (input *FileInput) Init() error {
 	file, err := SndFileOpen(input.File, O_RDONLY, nil)
 	if err != nil {
 		input.sndFile = nil
-		Log.Printf("Can't open new file : %s", input.File)
+		Log.Printf("Can't open file '%s' : %v", input.File, err)
 		return err
 	}
 
