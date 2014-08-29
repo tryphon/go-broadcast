@@ -218,4 +218,7 @@ func (config *BackupConfig) Apply(alsaInput *AlsaInput, timedFileOutput *TimedFi
 	config.Files.Apply(timedFileOutput)
 	config.Http.Apply(httpServer)
 	config.Log.Apply()
+
+	timedFileOutput.SetSampleRate(alsaInput.SampleRate)
+	timedFileOutput.SetChannelCount(alsaInput.Channels)
 }

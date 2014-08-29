@@ -34,6 +34,9 @@ func (input *AlsaInput) Init() (err error) {
 	if input.SampleRate == 0 {
 		input.SampleRate = 44100
 	}
+	if input.Channels == 0 {
+		input.Channels = 2
+	}
 
 	if input.SampleFormat != nil {
 		input.handle.SampleFormat = ToAlsaSampleFormat(input.SampleFormat)

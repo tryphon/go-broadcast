@@ -80,8 +80,6 @@ func backup(arguments []string) {
 
 	config.Apply(alsaInput, timedFileOutput, httpServer)
 
-	timedFileOutput.SetSampleRate(alsaInput.SampleRate)
-
 	err := alsaInput.Init()
 	checkError(err)
 

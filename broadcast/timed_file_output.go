@@ -15,6 +15,7 @@ type TimedFileOutput struct {
 
 	fileDuration time.Duration
 	sampleRate   int
+	channelCount int
 
 	recording            bool
 	currentFile          *SndFile
@@ -34,6 +35,17 @@ func (output *TimedFileOutput) SampleRate() int {
 
 func (output *TimedFileOutput) SetSampleRate(sampleRate int) {
 	output.sampleRate = sampleRate
+}
+
+func (output *TimedFileOutput) ChannelCount() int {
+	if output.channelCount == 0 {
+		output.channelCount = 2
+	}
+	return output.channelCount
+}
+
+func (output *TimedFileOutput) SetChannelCount(channelCount int) {
+	output.channelCount = channelCount
 }
 
 func (output *TimedFileOutput) FileDuration() time.Duration {
@@ -91,7 +103,7 @@ func (output *TimedFileOutput) newFile(now time.Time) error {
 
 	var fileInfo Info
 	fileInfo.SetSampleRate(output.SampleRate())
-	fileInfo.SetChannels(2)
+	fileInfo.SetChannels(output.ChannelCount())
 	fileInfo.SetFormat(FORMAT_WAV | FORMAT_PCM_16)
 
 	os.MkdirAll(path.Dir(fileName), 0775)
