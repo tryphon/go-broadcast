@@ -30,6 +30,10 @@ func (info *Info) SampleRate() int {
 	return int(info.samplerate)
 }
 
+func (info *Info) Channels() int {
+	return int(info.channels)
+}
+
 func (info *Info) SetSampleRate(sampleRate int) {
 	info.samplerate = C.int(sampleRate)
 }
