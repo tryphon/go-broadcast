@@ -1,6 +1,9 @@
 package broadcast
 
 import (
+	"bytes"
+	"io/ioutil"
+	"reflect"
 	"testing"
 )
 
@@ -52,5 +55,39 @@ func TestLameEncoder_Close(t *testing.T) {
 
 	if encoder.handle != nil {
 		t.Errorf("Encoder should not have lame handle after Close")
+	}
+}
+
+func TestLameEncoder_AudioOut(t *testing.T) {
+	input := FileInput{File: "testdata/sine-48000.flac"}
+	input.Init()
+	defer input.Close()
+
+	var buffer bytes.Buffer
+
+	encoder := LameEncoder{SampleRate: input.SampleRate(), Quality: 1, Writer: &buffer}
+	encoder.Init()
+
+	for {
+		audio := input.Read()
+		if audio == nil {
+			break
+		}
+		encoder.AudioOut(audio)
+	}
+
+	encoder.Flush()
+
+	expectedBytes, err := ioutil.ReadFile("testdata/lame_encoder_sine_output.mp3")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if buffer.Len() != len(expectedBytes) {
+		t.Errorf("Wrong buffer length :\n got: %v\nwant: %v", buffer.Len(), len(expectedBytes))
+	}
+
+	if !reflect.DeepEqual(buffer.Bytes(), expectedBytes) {
+		t.Errorf("Encoded bytes doesn't match expected output")
 	}
 }

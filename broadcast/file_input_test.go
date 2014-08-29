@@ -22,6 +22,15 @@ func TestFileInput_ChannelCount(t *testing.T) {
 	}
 }
 
+func TestFileInput_SampleRate(t *testing.T) {
+	input := testFileInput()
+	defer input.Close()
+
+	if input.SampleRate() != 48000 {
+		t.Errorf(" :\n got: %v\nwant: %v", input.SampleRate(), 48000)
+	}
+}
+
 func TestFileInput_Read(t *testing.T) {
 	input := testFileInput()
 	defer input.Close()

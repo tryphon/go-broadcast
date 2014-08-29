@@ -18,6 +18,10 @@ func (input *FileInput) Init() error {
 	return nil
 }
 
+func (input *FileInput) SampleRate() int {
+	return input.sndFile.Info().SampleRate()
+}
+
 func (input *FileInput) ChannelCount() int {
 	return input.sndFile.Info().Channels()
 }

@@ -11,6 +11,7 @@ import (
 	"io"
 	"math"
 	"runtime"
+	"unsafe"
 )
 
 const (
@@ -59,6 +60,41 @@ func (encoder *LameEncoder) Init() error {
 	runtime.SetFinalizer(encoder, finalizeLameEncoder)
 
 	return nil
+}
+
+func (encoder *LameEncoder) AudioOut(audio *Audio) {
+	if encoder.Writer == nil {
+		return
+	}
+
+	estimatedSize := int(1.25*float64(audio.SampleCount()) + 7200)
+
+	encodedBytes := make([]byte, estimatedSize)
+	encodedByteCount := C.int(C.lame_encode_buffer_ieee_float(
+		encoder.handle,
+		(*C.float)(unsafe.Pointer(&audio.Samples(0)[0])),
+		(*C.float)(unsafe.Pointer(&audio.Samples(1)[0])),
+		C.int(audio.SampleCount()),
+		(*C.uchar)(unsafe.Pointer(&encodedBytes[0])),
+		C.int(estimatedSize),
+	))
+
+	Log.Printf("%d %d %d", audio.SampleCount(), estimatedSize, encodedByteCount)
+
+	encoder.Writer.Write(encodedBytes[0:encodedByteCount])
+}
+
+func (encoder *LameEncoder) Flush() {
+	estimatedSize := 7200
+	encodedBytes := make([]byte, estimatedSize)
+
+	encodedByteCount := C.int(C.lame_encode_flush(
+		encoder.handle,
+		(*C.uchar)(unsafe.Pointer(&encodedBytes[0])),
+		C.int(estimatedSize),
+	))
+
+	encoder.Writer.Write(encodedBytes[0:encodedByteCount])
 }
 
 func (encoder *LameEncoder) LameQuality() int {
