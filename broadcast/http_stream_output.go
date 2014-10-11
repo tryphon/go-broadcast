@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"errors"
-	metrics "github.com/tryphon/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"net"
 	"net/http"
 	"time"
@@ -37,7 +37,7 @@ func (output *HttpStreamOutput) Init() error {
 }
 
 func (output *HttpStreamOutput) dialTimeout(network, addr string) (net.Conn, error) {
-	connection, err := net.DialTimeout(network, addr, output.GetReadTimeout())
+	connection, err := net.DialTimeout(network, addr, output.GetWriteTimeout())
 	if err != nil {
 		output.connection = nil
 		return nil, err
@@ -55,7 +55,7 @@ func (output *HttpStreamOutput) dialTimeout(network, addr string) (net.Conn, err
 }
 
 func (output *HttpStreamOutput) updateDeadline() {
-	output.connection.SetWriteDeadline(time.Now().Add(output.GetReadTimeout()))
+	output.connection.SetWriteDeadline(time.Now().Add(output.GetWriteTimeout()))
 }
 
 func (output *HttpStreamOutput) Write(buffer []byte) (int, error) {
@@ -152,8 +152,8 @@ func (output *HttpStreamOutput) Run() {
 	}
 }
 
-func (output *HttpStreamOutput) GetReadTimeout() time.Duration {
-	return 10 * time.Second
+func (output *HttpStreamOutput) GetWriteTimeout() time.Duration {
+	return 30 * time.Second
 }
 
 func (output *HttpStreamOutput) GetWaitOnError() time.Duration {

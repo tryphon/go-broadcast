@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	alsa "github.com/tryphon/alsa-go"
-	metrics "github.com/tryphon/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 )
 
 type AlsaInput struct {

@@ -163,10 +163,11 @@ func (config *LogConfig) Apply() {
 }
 
 type HttpSourceConfig struct {
-	Alsa   AlsaInputConfig
-	Stream HttpStreamOutputConfig
-	Http   HttpServerConfig
-	Log    LogConfig
+	Alsa    AlsaInputConfig
+	Stream  HttpStreamOutputConfig
+	Http    HttpServerConfig
+	Log     LogConfig
+	Metrics MetricsConfig
 }
 
 func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
@@ -174,6 +175,7 @@ func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
 	config.Stream.Flags(flags, "stream")
 	config.Http.Flags(flags, "http")
 	config.Log.Flags(flags, "log")
+	config.Metrics.Flags(flags, "metrics")
 }
 
 func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *HttpStreamOutput, httpServer *HttpServer) {
@@ -181,6 +183,7 @@ func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *Ht
 	config.Stream.Apply(httpStreamOutput)
 	config.Http.Apply(httpServer)
 	config.Log.Apply()
+	config.Metrics.Apply()
 }
 
 type HttpStreamOutputConfig struct {

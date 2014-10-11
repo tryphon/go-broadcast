@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"bytes"
-	metrics "github.com/tryphon/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"io/ioutil"
 	"testing"
 )

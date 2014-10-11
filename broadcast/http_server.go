@@ -3,7 +3,7 @@ package broadcast
 import (
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
-	metrics "github.com/tryphon/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"net/http"
 )
 

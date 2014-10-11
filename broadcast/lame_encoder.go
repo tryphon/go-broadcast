@@ -8,7 +8,7 @@ import "C"
 
 import (
 	"errors"
-	metrics "github.com/tryphon/go-metrics"
+	metrics "github.com/rcrowley/go-metrics"
 	"io"
 	"math"
 	"runtime"
