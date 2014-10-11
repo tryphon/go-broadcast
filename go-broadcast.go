@@ -37,7 +37,7 @@ func main() {
 	case "loopback":
 		loopback(os.Args[2:])
 	default:
-		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|backup|udpclient|udpserver <url>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [options] httpclient|httpSource|backup|udpclient|udpserver|looppback\n", os.Args[0])
 		os.Exit(1)
 	}
 }
