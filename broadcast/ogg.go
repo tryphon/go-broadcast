@@ -97,10 +97,11 @@ type OggEncoder struct {
 	oss ogg.StreamState // take physical pages, weld into a logical stream of packets
 }
 
-func (encoder *OggEncoder) Init() {
+func (encoder *OggEncoder) Init() error {
 	encoder.oss.Init(rand.Int31())
 	encoder.Encoder.Init()
 	encoder.Flush()
+	return nil
 }
 
 func (encoder *OggEncoder) PacketAvailable(packet *ogg.Packet) {

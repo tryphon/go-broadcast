@@ -189,3 +189,38 @@ func TestHttpServerConfig_Apply(t *testing.T) {
 		t.Errorf("HttpServer Bind should be config Bind :\n got: %v\nwant: %v", httpEncoder.Bind, config.Bind)
 	}
 }
+
+func TestHttpStreamOutputConfig_Flags(t *testing.T) {
+	config := HttpStreamOutputConfig{}
+
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	config.Flags(flags, "stream")
+
+	flags.Parse(strings.Split("--stream-target=http://stream-in.tryphon.eu:8000/test.ogg --stream-quality=10 --stream-format=mp3", " "))
+	if config.Target != "http://stream-in.tryphon.eu:8000/test.ogg" {
+		t.Errorf("Target should be 'target' flag value :\n got: %v\nwant: %v", config.Target, "http://stream-in.tryphon.eu:8000/test.ogg")
+	}
+	if config.Quality != 10 {
+		t.Errorf("Target should be 'quality' flag value :\n got: %v\nwant: %v", config.Quality, 10)
+	}
+	if config.Format != "mp3" {
+		t.Errorf("Format should be 'format' flag value :\n got: %v\nwant: %v", config.Format, "mp3")
+	}
+}
+
+func TestHttpStreamOutput_Apply(t *testing.T) {
+	config := HttpStreamOutputConfig{Target: "http://stream-in.tryphon.eu:8000/test.ogg", Quality: 10, Format: "mp3"}
+	httpStreamOutput := &HttpStreamOutput{}
+
+	config.Apply(httpStreamOutput)
+
+	if httpStreamOutput.Target != config.Target {
+		t.Errorf("HttpStreamOutput Target should be config Target :\n got: %v\nwant: %v", httpStreamOutput.Target, config.Target)
+	}
+	if httpStreamOutput.Quality != 1.0 {
+		t.Errorf("HttpStreamOutput Quality should be config Quality divided by 10 :\n got: %v\nwant: %v", httpStreamOutput.Quality, config.Quality)
+	}
+	if httpStreamOutput.Format != config.Format {
+		t.Errorf("HttpStreamOutput Format should be config Format :\n got: %v\nwant: %v", httpStreamOutput.Format, config.Format)
+	}
+}

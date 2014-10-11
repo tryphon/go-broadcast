@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"errors"
+	metrics "github.com/tryphon/go-metrics"
 	"net"
 	"net/http"
 	"time"
@@ -13,10 +14,11 @@ type HttpStreamOutput struct {
 	Quality      float32
 	ChannelCount int32
 	SampleRate   int32
+	Format       string
 
 	Provider AudioProvider
 
-	encoder *OggEncoder
+	encoder StreamEncoder
 
 	client     http.Client
 	connection net.Conn
@@ -63,6 +65,7 @@ func (output *HttpStreamOutput) Write(buffer []byte) (int, error) {
 
 	wrote, err := output.connection.Write(buffer)
 	if err == nil {
+		metrics.GetOrRegisterCounter("http.output.Traffic", nil).Inc(int64(wrote))
 		output.updateDeadline()
 	} else {
 		Log.Printf("End of HTTP stream")
@@ -77,7 +80,7 @@ func (output *HttpStreamOutput) createConnection() error {
 		return err
 	}
 
-	request.Header.Add("Content-type", "application/ogg")
+	request.Header.Add("Content-type", output.contentType())
 	request.Header.Add("User-Agent", "Go Broadcast v0")
 
 	// request.SetBasicAuth("source", password)
@@ -93,19 +96,42 @@ func (output *HttpStreamOutput) createConnection() error {
 		return err
 	}
 
-	encoder := OggEncoder{
-		Encoder: VorbisEncoder{
-			Quality:      output.Quality,
-			ChannelCount: output.ChannelCount,
-			SampleRate:   output.SampleRate,
-		},
-		Writer: output,
-	}
-	encoder.Encoder.PacketHandler = &encoder
+	encoder := output.newEncoder()
 	encoder.Init()
 
-	output.encoder = &encoder
+	output.encoder = encoder
 	return nil
+}
+
+func (output *HttpStreamOutput) contentType() string {
+	if output.Format == "mp3" {
+		return "audio/mpeg"
+	} else {
+		return "application/ogg"
+	}
+}
+
+func (output *HttpStreamOutput) newEncoder() StreamEncoder {
+	if output.Format == "mp3" {
+		encoder := LameEncoder{
+			SampleRate:   int(output.SampleRate),
+			ChannelCount: int(output.ChannelCount),
+			Quality:      output.Quality,
+			Writer:       output,
+		}
+		return &encoder
+	} else {
+		encoder := OggEncoder{
+			Encoder: VorbisEncoder{
+				Quality:      output.Quality,
+				ChannelCount: output.ChannelCount,
+				SampleRate:   output.SampleRate,
+			},
+			Writer: output,
+		}
+		encoder.Encoder.PacketHandler = &encoder
+		return &encoder
+	}
 }
 
 func (output *HttpStreamOutput) Run() {
@@ -139,7 +165,4 @@ func (output *HttpStreamOutput) Reset() {
 		output.connection.Close()
 		output.connection = nil
 	}
-
-	// input.oggDecoder.Reset()
-	// input.vorbisDecoder.Reset()
 }
