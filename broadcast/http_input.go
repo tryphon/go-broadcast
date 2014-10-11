@@ -112,7 +112,7 @@ func (input *HttpInput) Read() (err error) {
 			return err
 		}
 
-		input.reader = response.Body
+		input.reader = NewMetricsReadCloser(response.Body, "http.input.Traffic")
 	}
 
 	if input.oggDecoder.Read(input.reader) {
