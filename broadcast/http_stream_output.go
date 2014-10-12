@@ -3,7 +3,7 @@ package broadcast
 import (
 	"errors"
 	"flag"
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	"net"
 	"net/http"
 	"strings"

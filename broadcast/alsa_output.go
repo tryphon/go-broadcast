@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"flag"
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	alsa "github.com/tryphon/alsa-go"
 	"strings"
 	"time"

@@ -2,7 +2,7 @@ package broadcast
 
 import (
 	"errors"
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
 	"github.com/tryphon/go-vorbis/vorbisenc"

@@ -2,8 +2,8 @@ package broadcast
 
 import (
 	"flag"
-	metrics "github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/librato"
+	metrics "github.com/tryphon/go-metrics"
+	"github.com/tryphon/go-metrics/librato"
 	"io"
 	"strings"
 	"time"

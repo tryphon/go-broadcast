@@ -13,7 +13,7 @@ import (
 	"projects.tryphon.eu/go-broadcast/broadcast"
 
 	"code.google.com/p/go.net/websocket"
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	"net/http"
 )
 

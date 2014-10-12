@@ -1,7 +1,7 @@
 package broadcast
 
 import (
-	metrics "github.com/rcrowley/go-metrics"
+	metrics "github.com/tryphon/go-metrics"
 	"math"
 	"math/rand"
 )
