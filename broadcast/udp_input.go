@@ -1,8 +1,10 @@
 package broadcast
 
 import (
+	"flag"
 	metrics "github.com/rcrowley/go-metrics"
 	"net"
+	"strings"
 )
 
 type UDPInput struct {
@@ -71,4 +73,16 @@ func (input *UDPInput) Run() {
 	for {
 		input.Read()
 	}
+}
+
+type UDPInputConfig struct {
+	Bind string
+}
+
+func (config *UDPInputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Bind, strings.Join([]string{prefix, "bind"}, "-"), ":9090", "The [address]:port where UDP stream is received")
+}
+
+func (config *UDPInputConfig) Apply(udpInput *UDPInput) {
+	udpInput.Bind = config.Bind
 }

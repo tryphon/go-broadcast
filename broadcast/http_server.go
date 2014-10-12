@@ -3,8 +3,10 @@ package broadcast
 import (
 	"code.google.com/p/go.net/websocket"
 	"encoding/json"
+	"flag"
 	metrics "github.com/rcrowley/go-metrics"
 	"net/http"
+	"strings"
 )
 
 type HttpServer struct {
@@ -68,4 +70,16 @@ func (server *HttpServer) soundMeterWebSocket(webSocket *websocket.Conn) {
 	}
 
 	Log.Debugf("Close SoundMeter websocket connection")
+}
+
+type HttpServerConfig struct {
+	Bind string
+}
+
+func (config *HttpServerConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Bind, strings.Join([]string{prefix, "bind"}, "-"), "", "'[address]:port' where the HTTP server is bind")
+}
+
+func (config *HttpServerConfig) Apply(httpServer *HttpServer) {
+	httpServer.Bind = config.Bind
 }

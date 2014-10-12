@@ -1,8 +1,10 @@
 package broadcast
 
 import (
+	"flag"
 	metrics "github.com/rcrowley/go-metrics"
 	"net"
+	"strings"
 )
 
 type UDPOutput struct {
@@ -69,4 +71,23 @@ func (output *UDPOutput) audioOut(audio *Audio) {
 	}
 
 	metrics.GetOrRegisterCounter("udp.output.Traffic", nil).Inc(int64(wroteLength))
+}
+
+type UDPOutputConfig struct {
+	Target string
+	Opus   OpusAudioEncoderConfig
+}
+
+func (config *UDPOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The host:port where UDP stream is sent")
+	config.Opus.Flags(flags, strings.Join([]string{prefix, "opus"}, "-"))
+}
+
+func (config *UDPOutputConfig) Apply(udpOutput *UDPOutput) {
+	udpOutput.Target = config.Target
+
+	if udpOutput.Encoder == nil {
+		udpOutput.Encoder = &OpusAudioEncoder{}
+	}
+	config.Opus.Apply(udpOutput.Encoder.(*OpusAudioEncoder))
 }

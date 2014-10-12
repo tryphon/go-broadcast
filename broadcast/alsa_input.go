@@ -1,8 +1,11 @@
 package broadcast
 
 import (
-	alsa "github.com/tryphon/alsa-go"
+	"flag"
 	metrics "github.com/rcrowley/go-metrics"
+	alsa "github.com/tryphon/alsa-go"
+	"strings"
+	"time"
 )
 
 type AlsaInput struct {
@@ -98,4 +101,30 @@ func (input *AlsaInput) Run() {
 	for {
 		input.Read()
 	}
+}
+
+type AlsaInputConfig struct {
+	Device         string
+	SampleRate     int
+	BufferDuration time.Duration
+	SampleFormat   string
+	Channels       int
+}
+
+func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Device, strings.Join([]string{prefix, "device"}, "-"), "default", "The alsa device used to record sound")
+	flags.IntVar(&config.SampleRate, strings.Join([]string{prefix, "sample-rate"}, "-"), 44100, "Sample rate")
+	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 250*time.Millisecond, "The alsa buffer duration")
+	flags.StringVar(&config.SampleFormat, strings.Join([]string{prefix, "sample-format"}, "-"), "auto", "The sample format used to record sound (s16le, s32le, s32be)")
+	flags.IntVar(&config.Channels, strings.Join([]string{prefix, "channels"}, "-"), 2, "The channels count to be used on alsa device")
+}
+
+func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
+	alsaInput.Device = config.Device
+	alsaInput.SampleRate = config.SampleRate
+
+	bufferSampleCount := int(float64(config.SampleRate) * config.BufferDuration.Seconds())
+	alsaInput.BufferSampleCount = bufferSampleCount
+	alsaInput.SampleFormat = ParseSampleFormat(config.SampleFormat)
+	alsaInput.Channels = config.Channels
 }

@@ -2,6 +2,8 @@ package broadcast
 
 import (
 	"errors"
+	"flag"
+	"strings"
 )
 
 type OpusAudioEncoder struct {
@@ -69,4 +71,16 @@ func (decoder *OpusAudioDecoder) Decode(data []byte) (*Audio, error) {
 	audio := NewAudio(frameCount, 2)
 	audio.LoadInterleavedFloats(samples, frameCount, 2)
 	return audio, nil
+}
+
+type OpusAudioEncoderConfig struct {
+	Bitrate int
+}
+
+func (config *OpusAudioEncoderConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.IntVar(&config.Bitrate, strings.Join([]string{prefix, "bitrate"}, "-"), 256000, "The Opus stream bitrate")
+}
+
+func (config *OpusAudioEncoderConfig) Apply(opusEncoder *OpusAudioEncoder) {
+	opusEncoder.Bitrate = config.Bitrate
 }
