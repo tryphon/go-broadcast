@@ -177,12 +177,20 @@ type HttpStreamOutputConfig struct {
 }
 
 func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	config.httpStreamOutputConfigFlags(flags, prefix)
+}
+
+func (config *HttpStreamOutputConfig) httpStreamOutputConfigFlags(flags *flag.FlagSet, prefix string) {
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
 	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), 5, "The stream quality")
 	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), "ogg/vorbis", "The stream format")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
+	config.httpStreamOutputApply(httpStreamOutput)
+}
+
+func (config *HttpStreamOutputConfig) httpStreamOutputApply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
 	httpStreamOutput.Quality = float32(config.Quality / 10.0)
 	httpStreamOutput.Format = config.Format

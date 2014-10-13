@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"projects.tryphon.eu/go-broadcast/broadcast"
+	"projects.tryphon.eu/go-broadcast/broadcast/command"
 
 	"code.google.com/p/go.net/websocket"
 	metrics "github.com/tryphon/go-metrics"
@@ -18,16 +19,17 @@ import (
 )
 
 func main() {
-	var command string
+	var commandName string
 	if len(os.Args) > 1 {
-		command = os.Args[1]
+		commandName = os.Args[1]
 	}
 
-	switch command {
+	switch commandName {
 	case "httpclient":
 		httpClient(os.Args[2:])
 	case "httpSource":
-		httpSource(os.Args[2:])
+		httpSource := command.HttpSource{}
+		httpSource.Main(os.Args[2:])
 	case "udpclient":
 		udpClient(os.Args[2:])
 	case "udpserver":
@@ -92,76 +94,6 @@ func backup(arguments []string) {
 		audio := <-channel
 		timedFileOutput.AudioOut(audio)
 	}
-}
-
-func httpSource(arguments []string) {
-	config := broadcast.HttpSourceConfig{}
-
-	flags := flag.NewFlagSet("httpsource", flag.ExitOnError)
-	config.Flags(flags)
-
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s httpsource [options]\n", os.Args[0])
-		flags.PrintDefaults()
-	}
-
-	flags.Parse(arguments)
-
-	if config.Stream.Target == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
-
-	broadcast.Log.Printf("Config: %v", config)
-
-	audioBuffer := &broadcast.MutexAudioBuffer{
-		Buffer: &broadcast.UnfillAudioBuffer{
-			Buffer:            &broadcast.MemoryAudioBuffer{},
-			MaxSampleCount:    5 * 44100,
-			UnfillSampleCount: 1024,
-		},
-	}
-	audioHandler := audioBuffer
-
-	audioProvider := broadcast.AudioProviderFunc(func() *broadcast.Audio {
-		audio := audioBuffer.Read()
-		for audio == nil {
-			time.Sleep(500 * time.Millisecond)
-			audio = audioBuffer.Read()
-		}
-		return audio
-	})
-
-	alsaInput := &broadcast.AlsaInput{}
-	httpStreamOutput := &broadcast.HttpStreamOutput{Provider: audioProvider}
-
-	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
-		Output: audioHandler,
-	}
-
-	alsaInput.SetAudioHandler(&broadcast.ResizeAudio{
-		Output:      soundMeterAudioHandler,
-		SampleCount: 1024,
-	})
-
-	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
-
-	config.Apply(alsaInput, httpStreamOutput, httpServer)
-	httpStreamOutput.ChannelCount = int32(alsaInput.Channels)
-	httpStreamOutput.SampleRate = int32(alsaInput.SampleRate)
-
-	err := alsaInput.Init()
-	checkError(err)
-
-	err = httpStreamOutput.Init()
-	checkError(err)
-
-	err = httpServer.Init()
-	checkError(err)
-
-	go httpStreamOutput.Run()
-
-	alsaInput.Run()
 }
 
 func udpClient(arguments []string) {

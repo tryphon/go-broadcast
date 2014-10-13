@@ -80,27 +80,6 @@ func (config *LogConfig) Apply() {
 	Log.Syslog = config.Syslog
 }
 
-type HttpSourceConfig struct {
-	CommandConfig
-
-	Alsa   AlsaInputConfig
-	Stream HttpStreamOutputConfig
-}
-
-func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
-	config.BaseFlags(flags)
-
-	config.Alsa.Flags(flags, "alsa")
-	config.Stream.Flags(flags, "stream")
-}
-
-func (config *HttpSourceConfig) Apply(alsaInput *AlsaInput, httpStreamOutput *HttpStreamOutput, httpServer *HttpServer) {
-	config.BaseApply(httpServer)
-
-	config.Alsa.Apply(alsaInput)
-	config.Stream.Apply(httpStreamOutput)
-}
-
 type BackupConfig struct {
 	CommandConfig
 
