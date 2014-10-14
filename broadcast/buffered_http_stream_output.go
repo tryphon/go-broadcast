@@ -76,3 +76,7 @@ func (config *BufferedHttpStreamOutputConfig) Apply(bufferedHttpStreamOutput *Bu
 	config.httpStreamOutputApply(bufferedHttpStreamOutput.output)
 	bufferedHttpStreamOutput.unfillAudioBuffer.MaxSampleCount = uint32(float64(bufferedHttpStreamOutput.output.SampleRate) * config.BufferDuration.Seconds())
 }
+
+func (config *BufferedHttpStreamOutputConfig) Empty() bool {
+	return config.Target == ""
+}

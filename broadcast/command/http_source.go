@@ -8,6 +8,9 @@ import (
 )
 
 type HttpSource struct {
+	alsaInput         *broadcast.AlsaInput
+	httpStreamOutputs *broadcast.HttpStreamOutputs
+	httpServer        *broadcast.HttpServer
 }
 
 func (command *HttpSource) checkError(err error) {
@@ -31,64 +34,68 @@ func (command *HttpSource) Main(arguments []string) {
 
 	flags.Parse(arguments)
 
-	if config.Stream.Target == "" {
+	if config.Empty() {
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	broadcast.Log.Printf("Config: %v", config)
 
-	alsaInput := &broadcast.AlsaInput{}
-	httpStreamOutput := broadcast.NewBufferedHttpStreamOutput()
+	command.alsaInput = &broadcast.AlsaInput{}
+	command.httpStreamOutputs = broadcast.NewHttpStreamOutputs()
 
 	soundMeterAudioHandler := &broadcast.SoundMeterAudioHandler{
-		Output: httpStreamOutput,
+		Output: command.httpStreamOutputs,
 	}
 
-	alsaInput.SetAudioHandler(&broadcast.ResizeAudio{
+	command.alsaInput.SetAudioHandler(&broadcast.ResizeAudio{
 		Output:      soundMeterAudioHandler,
 		SampleCount: 1024,
 	})
 
-	httpServer := &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+	command.httpServer = &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
 
-	config.Apply(alsaInput, httpStreamOutput, httpServer)
+	config.Apply(command)
 
-	err := alsaInput.Init()
+	err := command.alsaInput.Init()
 	command.checkError(err)
 
-	err = httpStreamOutput.Init()
+	err = command.httpStreamOutputs.Init()
 	command.checkError(err)
 
-	err = httpServer.Init()
+	err = command.httpServer.Init()
 	command.checkError(err)
 
-	go httpStreamOutput.Run()
+	go command.httpStreamOutputs.Run()
 
-	alsaInput.Run()
+	command.alsaInput.Run()
 }
 
 type HttpSourceConfig struct {
 	broadcast.CommandConfig
 
-	Alsa   broadcast.AlsaInputConfig
-	Stream broadcast.BufferedHttpStreamOutputConfig
+	Alsa    broadcast.AlsaInputConfig
+	Streams broadcast.HttpStreamOutputsConfig
 }
 
 func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
 	config.BaseFlags(flags)
 
 	config.Alsa.Flags(flags, "alsa")
-	config.Stream.Flags(flags, "stream")
+	config.Streams.Flags(flags, "stream")
 }
 
-func (config *HttpSourceConfig) Apply(alsaInput *broadcast.AlsaInput, httpStreamOutput *broadcast.BufferedHttpStreamOutput, httpServer *broadcast.HttpServer) {
-	config.BaseApply(httpServer)
+func (config *HttpSourceConfig) Apply(command *HttpSource) {
+	config.BaseApply(command.httpServer)
 
-	config.Alsa.Apply(alsaInput)
+	config.Alsa.Apply(command.alsaInput)
 
-	httpStreamOutput.SetChannelCount(alsaInput.Channels)
-	httpStreamOutput.SetSampleRate(alsaInput.SampleRate)
+	command.httpStreamOutputs.SetChannelCount(command.alsaInput.Channels)
+	command.httpStreamOutputs.SetSampleRate(command.alsaInput.SampleRate)
 
-	config.Stream.Apply(httpStreamOutput)
+	config.Streams.Apply(command.httpStreamOutputs)
+}
+
+func (config *HttpSourceConfig) Empty() bool {
+	return config.Streams.Empty()
 }
