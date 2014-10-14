@@ -147,7 +147,7 @@ func (output *HttpStreamOutput) Run() {
 			}
 		}
 
-		if output.connection != nil {
+		if output.connection != nil && output.encoder != nil {
 			audio := output.Provider.Read()
 			output.encoder.AudioOut(audio)
 		}
@@ -166,6 +166,7 @@ func (output *HttpStreamOutput) Reset() {
 	if output.connection != nil {
 		output.connection.Close()
 		output.connection = nil
+		output.encoder = nil
 	}
 }
 
