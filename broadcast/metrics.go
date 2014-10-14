@@ -32,7 +32,7 @@ func (metricsReadCloser *MetricsReadCloser) Close() error {
 }
 
 type MetricsConfig struct {
-	Librato MetricsLibratoConfig
+	Librato MetricsLibratoConfig `json:",omitempty"`
 }
 
 func (config *MetricsConfig) Flags(flags *flag.FlagSet, prefix string) {
@@ -44,8 +44,8 @@ func (config *MetricsConfig) Apply() {
 }
 
 type MetricsLibratoConfig struct {
-	Account string
-	Token   string
+	Account string `json:",omitempty"`
+	Token   string `json:",omitempty"`
 }
 
 func (config *MetricsLibratoConfig) Flags(flags *flag.FlagSet, prefix string) {
@@ -54,12 +54,14 @@ func (config *MetricsLibratoConfig) Flags(flags *flag.FlagSet, prefix string) {
 }
 
 func (config *MetricsLibratoConfig) Apply() {
-	go librato.Librato(metrics.DefaultRegistry,
-		10e9,
-		config.Account,
-		config.Token,
-		"gobroadcast",
-		[]float64{0.95},
-		time.Millisecond,
-	)
+	if config.Account != "" && config.Token != "" {
+		go librato.Librato(metrics.DefaultRegistry,
+			10e9,
+			config.Account,
+			config.Token,
+			"gobroadcast",
+			[]float64{0.95},
+			time.Millisecond,
+		)
+	}
 }
