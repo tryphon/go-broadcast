@@ -1,17 +1,41 @@
 package broadcast
 
 import (
+	"encoding/json"
 	"flag"
+	"io/ioutil"
 	"strings"
 )
 
 type CommandConfig struct {
+	File string `json:"-"`
+
 	Http    HttpServerConfig
 	Log     LogConfig
 	Metrics MetricsConfig
 }
 
+func LoadConfig(file string, config interface{}) error {
+	if file == "" {
+		return nil
+	}
+
+	Log.Printf("Read config file: %s", file)
+	data, err := ioutil.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(data, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (config *CommandConfig) BaseFlags(flags *flag.FlagSet) {
+	flags.StringVar(&config.File, "config", "", "The config file to be loaded on startup")
+
 	config.Http.Flags(flags, "http")
 	config.Log.Flags(flags, "log")
 	config.Metrics.Flags(flags, "metrics")

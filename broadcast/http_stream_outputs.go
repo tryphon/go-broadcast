@@ -53,7 +53,7 @@ func (output *HttpStreamOutputs) SetSampleRate(sampleRate int) {
 }
 
 type HttpStreamOutputsConfig struct {
-	Streams []*BufferedHttpStreamOutputConfig
+	Streams []BufferedHttpStreamOutputConfig
 }
 
 func (config *HttpStreamOutputsConfig) Empty() bool {
@@ -67,18 +67,26 @@ func (config *HttpStreamOutputsConfig) Empty() bool {
 	return true
 }
 
-func (config *HttpStreamOutputsConfig) Flags(flags *flag.FlagSet, prefix string) {
-	commandLineStreamCount := 4
-	config.Streams = make([]*BufferedHttpStreamOutputConfig, commandLineStreamCount)
+func (config *HttpStreamOutputsConfig) Compact() {
+	notEmptyStreams := []BufferedHttpStreamOutputConfig{}
+	for _, streamConfig := range config.Streams {
+		if !streamConfig.Empty() {
+			notEmptyStreams = append(notEmptyStreams, streamConfig)
+		}
+	}
+	config.Streams = notEmptyStreams
+}
 
-	for streamNumber := 1; streamNumber <= commandLineStreamCount; streamNumber++ {
-		streamConfig := BufferedHttpStreamOutputConfig{}
-		streamConfig.Flags(flags, fmt.Sprintf("%s-%d", prefix, streamNumber))
-		config.Streams[streamNumber-1] = &streamConfig
+func (config *HttpStreamOutputsConfig) Flags(flags *flag.FlagSet, prefix string) {
+	config.Streams = make([]BufferedHttpStreamOutputConfig, 4)
+
+	for index, _ := range config.Streams {
+		config.Streams[index].Flags(flags, fmt.Sprintf("%s-%d", prefix, index+1))
 	}
 }
 
 func (config *HttpStreamOutputsConfig) Apply(httpStreamOutputs *HttpStreamOutputs) {
+	config.Compact()
 	for _, streamConfig := range config.Streams {
 		if !streamConfig.Empty() {
 			stream := httpStreamOutputs.Create()

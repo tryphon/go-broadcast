@@ -1,0 +1,33 @@
+{
+    "Log": {
+        "Debug": true,
+        "Syslog": true
+    },
+    "Metrics": {
+        "Librato": {
+        }
+    },
+    "Alsa": {
+        "Device": "hw:0",
+        "SampleRate": 44100,
+        "BufferDuration": 250000000,
+        "SampleFormat": "auto",
+        "Channels": 2
+    },
+    "Http": {
+        "Streams": [
+            {
+                "Target": "http://source:secret@stream-in.tryphon.eu:8000/gobroadcast.mp3",
+                "Quality": 5,
+                "Format": "mp3",
+                "BufferDuration": 10000000000
+            },
+            {
+                "Target": "http://source:secret@stream-in.tryphon.eu:8000/gobroadcast.ogg",
+                "Quality": 5,
+                "Format": "ogg",
+                "BufferDuration": 10000000000
+            }
+        ]
+    }
+}

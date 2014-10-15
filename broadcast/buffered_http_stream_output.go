@@ -68,12 +68,14 @@ type BufferedHttpStreamOutputConfig struct {
 }
 
 func (config *BufferedHttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
-	config.httpStreamOutputConfigFlags(flags, prefix)
+	config.HttpStreamOutputConfig.Flags(flags, prefix)
+
 	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 10*time.Second, "The maximum duration of saved sound")
 }
 
 func (config *BufferedHttpStreamOutputConfig) Apply(bufferedHttpStreamOutput *BufferedHttpStreamOutput) {
-	config.httpStreamOutputApply(bufferedHttpStreamOutput.output)
+	config.HttpStreamOutputConfig.Apply(bufferedHttpStreamOutput.output)
+
 	bufferedHttpStreamOutput.unfillAudioBuffer.MaxSampleCount = uint32(float64(bufferedHttpStreamOutput.output.SampleRate) * config.BufferDuration.Seconds())
 }
 

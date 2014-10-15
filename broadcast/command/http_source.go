@@ -34,12 +34,13 @@ func (command *HttpSource) Main(arguments []string) {
 
 	flags.Parse(arguments)
 
+	err := broadcast.LoadConfig(config.File, &config)
+	command.checkError(err)
+
 	if config.Empty() {
 		flag.Usage()
 		os.Exit(1)
 	}
-
-	broadcast.Log.Printf("Config: %v", config)
 
 	command.alsaInput = &broadcast.AlsaInput{}
 	command.httpStreamOutputs = broadcast.NewHttpStreamOutputs()
@@ -53,11 +54,14 @@ func (command *HttpSource) Main(arguments []string) {
 		SampleCount: 1024,
 	})
 
-	command.httpServer = &broadcast.HttpServer{SoundMeterAudioHandler: soundMeterAudioHandler}
+	command.httpServer = &broadcast.HttpServer{
+		SoundMeterAudioHandler: soundMeterAudioHandler,
+		Config:                 &config,
+	}
 
 	config.Apply(command)
 
-	err := command.alsaInput.Init()
+	err = command.alsaInput.Init()
 	command.checkError(err)
 
 	err = command.httpStreamOutputs.Init()
@@ -74,15 +78,15 @@ func (command *HttpSource) Main(arguments []string) {
 type HttpSourceConfig struct {
 	broadcast.CommandConfig
 
-	Alsa    broadcast.AlsaInputConfig
-	Streams broadcast.HttpStreamOutputsConfig
+	Alsa broadcast.AlsaInputConfig
+	Http broadcast.HttpStreamOutputsConfig
 }
 
 func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
 	config.BaseFlags(flags)
 
 	config.Alsa.Flags(flags, "alsa")
-	config.Streams.Flags(flags, "stream")
+	config.Http.Flags(flags, "stream")
 }
 
 func (config *HttpSourceConfig) Apply(command *HttpSource) {
@@ -93,9 +97,9 @@ func (config *HttpSourceConfig) Apply(command *HttpSource) {
 	command.httpStreamOutputs.SetChannelCount(command.alsaInput.Channels)
 	command.httpStreamOutputs.SetSampleRate(command.alsaInput.SampleRate)
 
-	config.Streams.Apply(command.httpStreamOutputs)
+	config.Http.Apply(command.httpStreamOutputs)
 }
 
 func (config *HttpSourceConfig) Empty() bool {
-	return config.Streams.Empty()
+	return config.Http.Empty()
 }
