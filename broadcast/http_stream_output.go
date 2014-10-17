@@ -3,7 +3,6 @@ package broadcast
 import (
 	"errors"
 	"flag"
-	metrics "github.com/tryphon/go-metrics"
 	"net"
 	"net/http"
 	"strings"
@@ -24,6 +23,8 @@ type HttpStreamOutput struct {
 
 	client     http.Client
 	connection net.Conn
+
+	Metrics *LocalMetrics
 }
 
 func (output *HttpStreamOutput) Init() error {
@@ -67,13 +68,21 @@ func (output *HttpStreamOutput) Write(buffer []byte) (int, error) {
 
 	wrote, err := output.connection.Write(buffer)
 	if err == nil {
-		metrics.GetOrRegisterCounter("http.output.Traffic", nil).Inc(int64(wrote))
+		output.metrics().Counter("http.output.Traffic").Inc(int64(wrote))
+
 		output.updateDeadline()
 	} else {
 		Log.Printf("End of HTTP stream")
 		output.Reset()
 	}
 	return wrote, err
+}
+
+func (output *HttpStreamOutput) metrics() *LocalMetrics {
+	if output.Metrics == nil {
+		output.Metrics = &LocalMetrics{}
+	}
+	return output.Metrics
 }
 
 func (output *HttpStreamOutput) createConnection() error {

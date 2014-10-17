@@ -2,31 +2,62 @@ package broadcast
 
 import (
 	"flag"
+	"fmt"
+	"hash/crc32"
+	"strconv"
 	"strings"
 	"time"
 )
 
 type BufferedHttpStreamOutput struct {
-	output            *HttpStreamOutput
-	buffer            AudioBuffer
+	Identifier string
+
+	output *HttpStreamOutput
+	buffer AudioBuffer
+
 	unfillAudioBuffer *UnfillAudioBuffer
+	memoryAudioBuffer *MemoryAudioBuffer
+
+	Metrics *LocalMetrics
 }
 
 func NewBufferedHttpStreamOutput() *BufferedHttpStreamOutput {
-	unfillAudioBuffer := &UnfillAudioBuffer{
-		Buffer:            &MemoryAudioBuffer{},
+	output := BufferedHttpStreamOutput{}
+
+	output.memoryAudioBuffer = &MemoryAudioBuffer{}
+	output.unfillAudioBuffer = &UnfillAudioBuffer{
+		Buffer:            output.memoryAudioBuffer,
 		MaxSampleCount:    5 * 44100,
 		UnfillSampleCount: 1024,
 	}
-
-	return &BufferedHttpStreamOutput{
-		output:            &HttpStreamOutput{},
-		buffer:            &MutexAudioBuffer{Buffer: unfillAudioBuffer},
-		unfillAudioBuffer: unfillAudioBuffer,
+	output.buffer = &MutexAudioBuffer{
+		Buffer: output.unfillAudioBuffer,
 	}
+	output.output = &HttpStreamOutput{}
+
+	return &output
+}
+
+func (output *BufferedHttpStreamOutput) defaultIdentifier() string {
+	return strconv.FormatInt(int64(crc32.ChecksumIEEE([]byte(output.output.Target))), 16)
+}
+
+func (output *BufferedHttpStreamOutput) metrics() *LocalMetrics {
+	if output.Metrics == nil {
+		output.Metrics = &LocalMetrics{prefix: fmt.Sprintf("stream-%s", output.Identifier)}
+		Log.Debugf("output.Identifier: %s", output.Metrics.prefix)
+	}
+	return output.Metrics
 }
 
 func (output *BufferedHttpStreamOutput) Init() error {
+	if output.Identifier == "" {
+		output.Identifier = output.defaultIdentifier()
+	}
+
+	output.memoryAudioBuffer.Metrics = output.metrics()
+	output.output.Metrics = output.metrics()
+
 	output.output.Provider = output
 
 	err := output.output.Init()
@@ -64,18 +95,22 @@ func (output *BufferedHttpStreamOutput) SetSampleRate(sampleRate int) {
 
 type BufferedHttpStreamOutputConfig struct {
 	HttpStreamOutputConfig
+	Identifier     string
 	BufferDuration time.Duration
 }
 
 func (config *BufferedHttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
 	config.HttpStreamOutputConfig.Flags(flags, prefix)
 
+	flags.StringVar(&config.Identifier, strings.Join([]string{prefix, "id"}, "-"), "", "The identifier of this stream")
 	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 10*time.Second, "The maximum duration of saved sound")
 }
 
 func (config *BufferedHttpStreamOutputConfig) Apply(bufferedHttpStreamOutput *BufferedHttpStreamOutput) {
 	config.HttpStreamOutputConfig.Apply(bufferedHttpStreamOutput.output)
-
+	if config.Identifier != "" {
+		bufferedHttpStreamOutput.Identifier = config.Identifier
+	}
 	bufferedHttpStreamOutput.unfillAudioBuffer.MaxSampleCount = uint32(float64(bufferedHttpStreamOutput.output.SampleRate) * config.BufferDuration.Seconds())
 }
 

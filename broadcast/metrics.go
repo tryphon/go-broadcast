@@ -9,6 +9,30 @@ import (
 	"time"
 )
 
+type LocalMetrics struct {
+	prefix string
+}
+
+func (local *LocalMetrics) Name(name string) string {
+	if local.prefix != "" {
+		return strings.Join([]string{local.prefix, name}, ".")
+	} else {
+		return name
+	}
+}
+
+func (local *LocalMetrics) Counter(name string) metrics.Counter {
+	return metrics.GetOrRegisterCounter(local.Name(name), nil)
+}
+
+func (local *LocalMetrics) Gauge(name string) metrics.Gauge {
+	return metrics.GetOrRegisterGauge(local.Name(name), nil)
+}
+
+func (local *LocalMetrics) Histogram(name string, sample metrics.Sample) metrics.Histogram {
+	return metrics.GetOrRegisterHistogram(local.Name(name), nil, sample)
+}
+
 type MetricsReadCloser struct {
 	reader  io.ReadCloser
 	counter metrics.Counter

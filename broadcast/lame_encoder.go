@@ -52,6 +52,9 @@ func (encoder *LameEncoder) Init() error {
 	C.lame_set_quality(handle, C.int(encoder.LameQuality()))
 	C.lame_set_mode(handle, (C.MPEG_mode)(encoder.LameMode()))
 
+	C.lame_set_VBR(handle, C.vbr_mtrh)
+	C.lame_set_VBR_q(handle, C.int(encoder.LameQuality()))
+
 	initResults := C.lame_init_params(handle)
 	if initResults == -1 {
 		return errors.New("Can't setup lame")

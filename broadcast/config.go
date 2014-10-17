@@ -10,9 +10,9 @@ import (
 type CommandConfig struct {
 	File string `json:"-"`
 
-	Http    HttpServerConfig
-	Log     LogConfig
-	Metrics MetricsConfig
+	HttpServer HttpServerConfig
+	Log        LogConfig
+	Metrics    MetricsConfig
 }
 
 func LoadConfig(file string, config interface{}) error {
@@ -36,13 +36,13 @@ func LoadConfig(file string, config interface{}) error {
 func (config *CommandConfig) BaseFlags(flags *flag.FlagSet) {
 	flags.StringVar(&config.File, "config", "", "The config file to be loaded on startup")
 
-	config.Http.Flags(flags, "http")
+	config.HttpServer.Flags(flags, "http")
 	config.Log.Flags(flags, "log")
 	config.Metrics.Flags(flags, "metrics")
 }
 
 func (config *CommandConfig) BaseApply(httpServer *HttpServer) {
-	config.Http.Apply(httpServer)
+	config.HttpServer.Apply(httpServer)
 	config.Log.Apply()
 	config.Metrics.Apply()
 }

@@ -14,7 +14,8 @@ type MemoryAudioBuffer struct {
 	nextFreeIndex uint32
 	readIndex     uint32
 
-	full bool
+	full    bool
+	Metrics *LocalMetrics
 }
 
 func (buffer *MemoryAudioBuffer) Empty() bool {
@@ -29,10 +30,17 @@ func (buffer *MemoryAudioBuffer) SampleCount() uint32 {
 	return buffer.sampleCount
 }
 
+func (buffer *MemoryAudioBuffer) metrics() *LocalMetrics {
+	if buffer.Metrics == nil {
+		buffer.Metrics = &LocalMetrics{}
+	}
+	return buffer.Metrics
+}
+
 func (buffer *MemoryAudioBuffer) changeSampleCount(delta int) {
 	buffer.sampleCount += uint32(delta)
-	metrics.GetOrRegisterGauge("buffer.Size", metrics.DefaultRegistry).Update(int64(buffer.sampleCount))
-	metrics.GetOrRegisterHistogram("buffer.SizeHistory", metrics.DefaultRegistry, metrics.NewExpDecaySample(1028, 0.015)).Update(int64(buffer.sampleCount))
+	buffer.metrics().Gauge("buffer.Size").Update(int64(buffer.sampleCount))
+	buffer.metrics().Histogram("buffer.SizeHistory", metrics.NewExpDecaySample(1028, 0.015)).Update(int64(buffer.sampleCount))
 }
 
 func (buffer *MemoryAudioBuffer) AudioOut(audio *Audio) {

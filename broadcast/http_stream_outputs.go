@@ -87,7 +87,8 @@ func (config *HttpStreamOutputsConfig) Flags(flags *flag.FlagSet, prefix string)
 
 func (config *HttpStreamOutputsConfig) Apply(httpStreamOutputs *HttpStreamOutputs) {
 	config.Compact()
-	for _, streamConfig := range config.Streams {
+	for index, _ := range config.Streams {
+		streamConfig := config.Streams[index]
 		if !streamConfig.Empty() {
 			stream := httpStreamOutputs.Create()
 			streamConfig.Apply(stream)
