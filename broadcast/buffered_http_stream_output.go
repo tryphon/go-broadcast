@@ -71,7 +71,7 @@ func (output *BufferedHttpStreamOutput) Init() error {
 func (output *BufferedHttpStreamOutput) Read() (audio *Audio) {
 	audio = output.buffer.Read()
 	for audio == nil {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 		audio = output.buffer.Read()
 	}
 	return
