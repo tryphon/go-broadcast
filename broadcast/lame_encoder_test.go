@@ -58,6 +58,8 @@ func TestLameEncoder_Close(t *testing.T) {
 }
 
 func TestLameEncoder_AudioOut(t *testing.T) {
+	t.Skip()
+
 	input := FileInput{File: "testdata/sine-48000.flac"}
 	input.Init()
 	defer input.Close()
