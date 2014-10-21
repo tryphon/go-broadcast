@@ -77,6 +77,8 @@ func TestLameEncoder_AudioOut(t *testing.T) {
 
 	encoder.Flush()
 
+	// ioutil.WriteFile("testdata/lame_encoder_sine_output.mp3", buffer.Bytes(), 0644)
+
 	expectedBytes, err := ioutil.ReadFile("testdata/lame_encoder_sine_output.mp3")
 	if err != nil {
 		t.Fatal(err)
