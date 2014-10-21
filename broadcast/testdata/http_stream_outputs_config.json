@@ -1,0 +1,18 @@
+{
+    "Streams": [
+        {
+            "Identifier": "mp3",
+            "Target": "http://source:secret@stream-in.tryphon.eu:8000/stagebox1.mp3",
+            "Quality": 5,
+            "Format": "mp3",
+            "BufferDuration": 10000000000
+        },
+        {
+            "Identifier": "ogg",
+            "Target": "http://source:secret@stream-in.tryphon.eu:8000/stagebox1.ogg",
+            "Quality": 5,
+            "Format": "ogg",
+            "BufferDuration": 10000000000
+        }
+    ]
+}

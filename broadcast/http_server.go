@@ -33,6 +33,10 @@ func (server *HttpServer) Init() error {
 	return nil
 }
 
+func (server *HttpServer) Register(pattern string, handler http.Handler) {
+	http.Handle(pattern, handler)
+}
+
 func (server *HttpServer) configJSON(response http.ResponseWriter, request *http.Request) {
 	response.Header().Set("Content-Type", "application/json")
 	jsonBytes, _ := json.Marshal(server.Config)

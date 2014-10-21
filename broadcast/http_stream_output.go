@@ -24,6 +24,8 @@ type HttpStreamOutput struct {
 	client     http.Client
 	connection net.Conn
 
+	started bool
+
 	Metrics *LocalMetrics
 }
 
@@ -145,8 +147,19 @@ func (output *HttpStreamOutput) newEncoder() StreamEncoder {
 	}
 }
 
+func (output *HttpStreamOutput) Start() {
+	go output.Run()
+}
+
+func (output *HttpStreamOutput) Stop() {
+	output.started = false
+	Log.Printf("Stop")
+}
+
 func (output *HttpStreamOutput) Run() {
-	for {
+	output.started = true
+	Log.Printf("Start")
+	for output.started {
 		if output.connection == nil {
 			err := output.createConnection()
 
@@ -161,6 +174,7 @@ func (output *HttpStreamOutput) Run() {
 			output.encoder.AudioOut(audio)
 		}
 	}
+	Log.Printf("Stopped")
 }
 
 func (output *HttpStreamOutput) GetWriteTimeout() time.Duration {
@@ -186,10 +200,20 @@ type HttpStreamOutputConfig struct {
 	Format  string
 }
 
+func NewHttpStreamOutputConfig() HttpStreamOutputConfig {
+	return HttpStreamOutputConfig{
+		Target:  "",
+		Quality: 5,
+		Format:  "ogg/vorbis",
+	}
+}
+
 func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	defaultConfig := NewHttpStreamOutputConfig()
+
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
-	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), 5, "The stream quality")
-	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), "ogg/vorbis", "The stream format")
+	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), defaultConfig.Quality, "The stream quality")
+	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), defaultConfig.Format, "The stream format")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {

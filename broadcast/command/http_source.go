@@ -38,8 +38,7 @@ func (command *HttpSource) Main(arguments []string) {
 	command.checkError(err)
 
 	if config.Empty() {
-		flag.Usage()
-		os.Exit(1)
+		broadcast.Log.Printf("No stream is configured")
 	}
 
 	command.alsaInput = &broadcast.AlsaInput{}
@@ -58,6 +57,9 @@ func (command *HttpSource) Main(arguments []string) {
 		SoundMeterAudioHandler: soundMeterAudioHandler,
 		Config:                 &config,
 	}
+
+	command.httpServer.Register("/streams.json", broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs))
+	command.httpServer.Register("/streams/", broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs))
 
 	config.Apply(command)
 
