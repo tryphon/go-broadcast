@@ -12,16 +12,11 @@ import (
 type HttpServer struct {
 	Bind                   string
 	SoundMeterAudioHandler *SoundMeterAudioHandler
-	Config                 interface{}
 }
 
 func (server *HttpServer) Init() error {
 	if server.Bind != "" {
 		http.HandleFunc("/metrics.json", server.metricsJSON)
-
-		if server.Config != nil {
-			http.HandleFunc("/config.json", server.configJSON)
-		}
 
 		if server.SoundMeterAudioHandler != nil {
 			http.HandleFunc("/soundmeter.json", server.soundMeterJSON)
@@ -35,12 +30,6 @@ func (server *HttpServer) Init() error {
 
 func (server *HttpServer) Register(pattern string, handler http.Handler) {
 	http.Handle(pattern, handler)
-}
-
-func (server *HttpServer) configJSON(response http.ResponseWriter, request *http.Request) {
-	response.Header().Set("Content-Type", "application/json")
-	jsonBytes, _ := json.Marshal(server.Config)
-	response.Write(jsonBytes)
 }
 
 func (server *HttpServer) metricsJSON(response http.ResponseWriter, request *http.Request) {

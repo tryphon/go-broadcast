@@ -1,6 +1,7 @@
 package command
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -11,6 +12,23 @@ type HttpSource struct {
 	alsaInput         *broadcast.AlsaInput
 	httpStreamOutputs *broadcast.HttpStreamOutputs
 	httpServer        *broadcast.HttpServer
+
+	config *HttpSourceConfig
+}
+
+func (command *HttpSource) Config() HttpSourceConfig {
+	command.config.Http = command.httpStreamOutputs.Config()
+	return *command.config
+}
+
+func (command *HttpSource) ConfigToJSON() []byte {
+	jsonBytes, _ := json.Marshal(command.Config())
+	return jsonBytes
+}
+
+func (command *HttpSource) SaveConfig() error {
+	config := command.Config()
+	return broadcast.SaveConfig(config.File, config)
 }
 
 func (command *HttpSource) checkError(err error) {
@@ -19,6 +37,19 @@ func (command *HttpSource) checkError(err error) {
 		broadcast.Log.Printf("Fatal error : %s", err.Error())
 		os.Exit(1)
 	}
+}
+
+func (command *HttpSource) Setup(config *HttpSourceConfig) {
+	config.BaseApply(command.httpServer)
+
+	config.Alsa.Apply(command.alsaInput)
+
+	command.httpStreamOutputs.SetChannelCount(command.alsaInput.Channels)
+	command.httpStreamOutputs.SetSampleRate(command.alsaInput.SampleRate)
+
+	config.Http.Apply(command.httpStreamOutputs)
+
+	command.config = config
 }
 
 func (command *HttpSource) Main(arguments []string) {
@@ -55,13 +86,17 @@ func (command *HttpSource) Main(arguments []string) {
 
 	command.httpServer = &broadcast.HttpServer{
 		SoundMeterAudioHandler: soundMeterAudioHandler,
-		Config:                 &config,
 	}
 
-	command.httpServer.Register("/streams.json", broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs))
-	command.httpServer.Register("/streams/", broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs))
+	httpStreamOutputsController := broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs)
+	command.httpServer.Register("/streams.json", httpStreamOutputsController)
+	command.httpServer.Register("/streams/", httpStreamOutputsController)
 
-	config.Apply(command)
+	configController := broadcast.NewConfigController(command)
+	command.httpServer.Register("/config.json", configController)
+	command.httpServer.Register("/config/", configController)
+
+	command.Setup(&config)
 
 	err = command.alsaInput.Init()
 	command.checkError(err)
@@ -92,16 +127,14 @@ func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
 }
 
 func (config *HttpSourceConfig) Apply(command *HttpSource) {
-	config.BaseApply(command.httpServer)
-
-	config.Alsa.Apply(command.alsaInput)
-
-	command.httpStreamOutputs.SetChannelCount(command.alsaInput.Channels)
-	command.httpStreamOutputs.SetSampleRate(command.alsaInput.SampleRate)
-
-	config.Http.Apply(command.httpStreamOutputs)
+	command.Setup(config)
 }
 
 func (config *HttpSourceConfig) Empty() bool {
 	return config.Http.Empty()
+}
+
+func (config *HttpSourceConfig) ToJSON() []byte {
+	jsonBytes, _ := json.Marshal(config)
+	return jsonBytes
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -20,12 +21,36 @@ func LoadConfig(file string, config interface{}) error {
 		return nil
 	}
 
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		Log.Printf("Config file not found: %s", file)
+		return nil
+	}
+
 	Log.Printf("Read config file: %s", file)
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return err
 	}
 	err = json.Unmarshal(data, config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SaveConfig(file string, config interface{}) error {
+	if file == "" {
+		return nil
+	}
+
+	Log.Printf("Save config file: %s", file)
+
+	jsonBytes, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(file, jsonBytes, 0640)
 	if err != nil {
 		return err
 	}
