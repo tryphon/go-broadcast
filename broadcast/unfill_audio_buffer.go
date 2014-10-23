@@ -1,14 +1,19 @@
 package broadcast
 
-import (
-	"time"
-)
-
 type UnfillAudioBuffer struct {
 	Buffer AudioBuffer
 
 	MaxSampleCount    uint32
 	UnfillSampleCount uint32
+
+	Metrics *LocalMetrics
+}
+
+func (buffer *UnfillAudioBuffer) metrics() *LocalMetrics {
+	if buffer.Metrics == nil {
+		buffer.Metrics = &LocalMetrics{}
+	}
+	return buffer.Metrics
 }
 
 func (pseudoBuffer *UnfillAudioBuffer) full() bool {
@@ -18,13 +23,12 @@ func (pseudoBuffer *UnfillAudioBuffer) full() bool {
 }
 
 func (pseudoBuffer *UnfillAudioBuffer) unfill() {
-	initialSampleCount := pseudoBuffer.Buffer.SampleCount()
 	targetSampleCount := pseudoBuffer.MaxSampleCount - pseudoBuffer.UnfillSampleCount
 
 	for pseudoBuffer.Buffer.SampleCount() > targetSampleCount {
-		pseudoBuffer.Buffer.Read()
+		unfillAudio := pseudoBuffer.Buffer.Read()
+		pseudoBuffer.metrics().Counter("buffer.Unfill").Inc(int64(unfillAudio.SampleCount()))
 	}
-	Log.Debugf("%v Unfill duration : %d samples", time.Now(), initialSampleCount-pseudoBuffer.Buffer.SampleCount())
 }
 
 func (pseudoBuffer *UnfillAudioBuffer) AudioOut(audio *Audio) {

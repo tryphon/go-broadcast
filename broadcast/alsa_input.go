@@ -2,8 +2,8 @@ package broadcast
 
 import (
 	"flag"
-	metrics "github.com/tryphon/go-metrics"
 	alsa "github.com/tryphon/alsa-go"
+	metrics "github.com/tryphon/go-metrics"
 	"strings"
 	"time"
 )
@@ -89,7 +89,7 @@ func (input *AlsaInput) Read() (err error) {
 			return err
 		}
 
-		metrics.GetOrRegisterCounter("alsa.input.SampleCount", nil).Inc(int64(audio.SampleCount()))
+		metrics.GetOrRegisterCounter("alsa.input.Samples", nil).Inc(int64(audio.SampleCount()))
 
 		input.audioHandler.AudioOut(audio)
 	}

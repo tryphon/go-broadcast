@@ -21,8 +21,9 @@ type HttpStreamOutput struct {
 
 	encoder StreamEncoder
 
-	client     http.Client
-	connection net.Conn
+	client         http.Client
+	connection     net.Conn
+	connectedSince time.Time
 
 	started bool
 
@@ -109,6 +110,8 @@ func (output *HttpStreamOutput) createConnection() error {
 		return err
 	}
 
+	output.connectedSince = time.Now()
+
 	encoder := output.newEncoder()
 	encoder.Init()
 
@@ -171,6 +174,9 @@ func (output *HttpStreamOutput) Run() {
 
 		if output.connection != nil && output.encoder != nil {
 			audio := output.Provider.Read()
+			output.metrics().Counter("http.Samples").Inc(int64(audio.SampleCount()))
+			output.metrics().Gauge("http.ConnectionDuration").Update(int64(output.ConnectionDuration().Seconds()))
+
 			output.encoder.AudioOut(audio)
 		}
 	}
@@ -191,6 +197,14 @@ func (output *HttpStreamOutput) Reset() {
 		output.connection = nil
 		output.encoder = nil
 	}
+}
+
+func (output *HttpStreamOutput) ConnectionDuration() time.Duration {
+	if output.connectedSince.IsZero() {
+		return time.Duration(0)
+	}
+
+	return time.Now().Sub(output.connectedSince)
 }
 
 type HttpStreamOutputConfig struct {

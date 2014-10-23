@@ -8,7 +8,6 @@ import "C"
 
 import (
 	"errors"
-	metrics "github.com/tryphon/go-metrics"
 	"io"
 	"math"
 	"runtime"
@@ -82,8 +81,6 @@ func (encoder *LameEncoder) AudioOut(audio *Audio) {
 		(*C.uchar)(unsafe.Pointer(&encodedBytes[0])),
 		C.int(estimatedSize),
 	))
-
-	metrics.GetOrRegisterGauge("lame.frames", nil).Update(int64(C.long(C.lame_get_frameNum(encoder.handle))))
 
 	encoder.Writer.Write(encodedBytes[0:encodedByteCount])
 }
