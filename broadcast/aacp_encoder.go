@@ -47,7 +47,6 @@ func (encoder *AACPEncoder) Init() error {
 
 	config := C.aacplusEncGetCurrentConfiguration(handle)
 	config.bitRate = C.int(encoder.BitRate)
-	Log.Printf("aacp bitRate: %d", config.bitRate)
 	config.bandWidth = C.int(0)
 	config.outputFormat = C.int(1)
 	config.nChannelsOut = C.int(encoder.ChannelCount)
@@ -59,7 +58,7 @@ func (encoder *AACPEncoder) Init() error {
 
 	encoder.encodedBytes = make([]byte, maxOutputBytes)
 	encoder.resizeAudio = &ResizeAudio{
-		SampleCount: int(inputSamples),
+		SampleCount: int(inputSamples) / encoder.ChannelCount,
 		Output:      AudioHandlerFunc(encoder.audioOut),
 	}
 
@@ -76,12 +75,16 @@ func (encoder *AACPEncoder) AudioOut(audio *Audio) {
 }
 
 func (encoder *AACPEncoder) audioOut(audio *Audio) {
+	interleavedFloats := audio.InterleavedFloats()
 	encodedByteCount := C.aacplusEncEncode(encoder.handle,
-		(*C.int32_t)(unsafe.Pointer(&audio.InterleavedFloats()[0])),
-		C.uint(audio.SampleCount()),
+		(*C.int32_t)(unsafe.Pointer(&interleavedFloats[0])),
+		C.uint(len(interleavedFloats)),
 		(*C.uchar)(unsafe.Pointer(&encoder.encodedBytes[0])),
 		C.uint(len(encoder.encodedBytes)))
-	encoder.Writer.Write(encoder.encodedBytes[0:encodedByteCount])
+
+	if encodedByteCount > 0 {
+		encoder.Writer.Write(encoder.encodedBytes[0:encodedByteCount])
+	}
 }
 
 func (encoder *AACPEncoder) Close() {
