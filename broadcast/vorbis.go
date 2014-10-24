@@ -110,8 +110,8 @@ func (decoder *VorbisDecoder) newAudio(pcmArray ***float32, sampleCount int) *Au
 
 type VorbisEncoder struct {
 	Quality      float32
-	ChannelCount int32
-	SampleRate   int32
+	ChannelCount int
+	SampleRate   int
 
 	PacketHandler OggPacketHandler
 
@@ -130,7 +130,7 @@ func (encoder *VorbisEncoder) Init() error {
 	if encoder.SampleRate == 0 {
 		encoder.SampleRate = 44100
 	}
-	if vorbisenc.InitVbr(&encoder.vi, encoder.ChannelCount, encoder.SampleRate, encoder.Quality) != 0 {
+	if vorbisenc.InitVbr(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), encoder.Quality) != 0 {
 		return errors.New("Can't initialize vorbis encoder")
 	}
 

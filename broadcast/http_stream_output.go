@@ -11,11 +11,7 @@ import (
 
 type HttpStreamOutput struct {
 	Target string
-	// FIXME
-	Quality      float32
-	ChannelCount int32
-	SampleRate   int32
-	Format       string
+	Format AudioFormat
 
 	Provider AudioProvider
 
@@ -94,7 +90,7 @@ func (output *HttpStreamOutput) createConnection() error {
 		return err
 	}
 
-	request.Header.Add("Content-type", output.contentType())
+	request.Header.Add("Content-type", output.Format.ContentType())
 	request.Header.Add("User-Agent", "Go Broadcast v0")
 
 	// request.SetBasicAuth("source", password)
@@ -112,42 +108,11 @@ func (output *HttpStreamOutput) createConnection() error {
 
 	output.connectedSince = time.Now()
 
-	encoder := output.newEncoder()
+	encoder := NewStreamEncoder(output.Format, output)
 	encoder.Init()
 
 	output.encoder = encoder
 	return nil
-}
-
-func (output *HttpStreamOutput) contentType() string {
-	if output.Format == "mp3" {
-		return "audio/mpeg"
-	} else {
-		return "application/ogg"
-	}
-}
-
-func (output *HttpStreamOutput) newEncoder() StreamEncoder {
-	if output.Format == "mp3" {
-		encoder := LameEncoder{
-			SampleRate:   int(output.SampleRate),
-			ChannelCount: int(output.ChannelCount),
-			Quality:      output.Quality,
-			Writer:       output,
-		}
-		return &encoder
-	} else {
-		encoder := OggEncoder{
-			Encoder: VorbisEncoder{
-				Quality:      output.Quality,
-				ChannelCount: output.ChannelCount,
-				SampleRate:   output.SampleRate,
-			},
-			Writer: output,
-		}
-		encoder.Encoder.PacketHandler = &encoder
-		return &encoder
-	}
 }
 
 func (output *HttpStreamOutput) Start() {
@@ -207,18 +172,19 @@ func (output *HttpStreamOutput) ConnectionDuration() time.Duration {
 	return time.Now().Sub(output.connectedSince)
 }
 
+func (output *HttpStreamOutput) SampleRate() int {
+	return output.Format.SampleRate
+}
+
 type HttpStreamOutputConfig struct {
 	Target string
-	// FIXME
-	Quality int
-	Format  string
+	Format string
 }
 
 func NewHttpStreamOutputConfig() HttpStreamOutputConfig {
 	return HttpStreamOutputConfig{
-		Target:  "",
-		Quality: 5,
-		Format:  "ogg/vorbis",
+		Target: "",
+		Format: "ogg/vorbis:vbr(q=5):2:44100",
 	}
 }
 
@@ -226,12 +192,10 @@ func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) 
 	defaultConfig := NewHttpStreamOutputConfig()
 
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
-	flags.IntVar(&config.Quality, strings.Join([]string{prefix, "quality"}, "-"), defaultConfig.Quality, "The stream quality")
 	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), defaultConfig.Format, "The stream format")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
-	httpStreamOutput.Quality = float32(config.Quality / 10.0)
-	httpStreamOutput.Format = config.Format
+	httpStreamOutput.Format = ParseAudioFormat(config.Format)
 }

@@ -2,6 +2,7 @@ package broadcast
 
 import (
 	"flag"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -196,20 +197,18 @@ func TestHttpStreamOutputConfig_Flags(t *testing.T) {
 	flags := flag.NewFlagSet("test", flag.ContinueOnError)
 	config.Flags(flags, "stream")
 
-	flags.Parse(strings.Split("--stream-target=http://stream-in.tryphon.eu:8000/test.ogg --stream-quality=10 --stream-format=mp3", " "))
+	flags.Parse(strings.Split("--stream-target=http://stream-in.tryphon.eu:8000/test.ogg --stream-format=mp3:vbr:q=10", " "))
 	if config.Target != "http://stream-in.tryphon.eu:8000/test.ogg" {
 		t.Errorf("Target should be 'target' flag value :\n got: %v\nwant: %v", config.Target, "http://stream-in.tryphon.eu:8000/test.ogg")
 	}
-	if config.Quality != 10 {
-		t.Errorf("Target should be 'quality' flag value :\n got: %v\nwant: %v", config.Quality, 10)
-	}
-	if config.Format != "mp3" {
-		t.Errorf("Format should be 'format' flag value :\n got: %v\nwant: %v", config.Format, "mp3")
+
+	if !reflect.DeepEqual(config.Format, "mp3:vbr:q=10") {
+		t.Errorf("Format encoding should be 'format' flag value :\n got: %v\nwant: %v", config.Format, "mp3:vbr:q=10")
 	}
 }
 
 func TestHttpStreamOutput_Apply(t *testing.T) {
-	config := HttpStreamOutputConfig{Target: "http://stream-in.tryphon.eu:8000/test.ogg", Quality: 10, Format: "mp3"}
+	config := HttpStreamOutputConfig{Target: "http://stream-in.tryphon.eu:8000/test.ogg", Format: "mp3:vbr(q=10)"}
 	httpStreamOutput := &HttpStreamOutput{}
 
 	config.Apply(httpStreamOutput)
@@ -217,10 +216,8 @@ func TestHttpStreamOutput_Apply(t *testing.T) {
 	if httpStreamOutput.Target != config.Target {
 		t.Errorf("HttpStreamOutput Target should be config Target :\n got: %v\nwant: %v", httpStreamOutput.Target, config.Target)
 	}
-	if httpStreamOutput.Quality != 1.0 {
-		t.Errorf("HttpStreamOutput Quality should be config Quality divided by 10 :\n got: %v\nwant: %v", httpStreamOutput.Quality, config.Quality)
-	}
-	if httpStreamOutput.Format != config.Format {
-		t.Errorf("HttpStreamOutput Format should be config Format :\n got: %v\nwant: %v", httpStreamOutput.Format, config.Format)
+	expectedFormat := AudioFormat{Encoding: "mp3", Mode: "vbr", Quality: 1}
+	if !reflect.DeepEqual(httpStreamOutput.Format, expectedFormat) {
+		t.Errorf("HttpStreamOutput Format should be config Format :\n got: %v\nwant: %v", httpStreamOutput.Format, expectedFormat)
 	}
 }

@@ -63,7 +63,7 @@ func (output *BufferedHttpStreamOutput) Setup(config *BufferedHttpStreamOutputCo
 	if config.Identifier != "" {
 		output.Identifier = config.Identifier
 	}
-	output.unfillAudioBuffer.MaxSampleCount = uint32(float64(output.output.SampleRate) * config.BufferDuration.Seconds())
+	output.unfillAudioBuffer.MaxSampleCount = uint32(float64(output.output.SampleRate()) * config.BufferDuration.Seconds())
 
 	output.config = config
 }
@@ -111,11 +111,11 @@ func (output *BufferedHttpStreamOutput) Run() {
 }
 
 func (output *BufferedHttpStreamOutput) SetChannelCount(channelCount int) {
-	output.output.ChannelCount = int32(channelCount)
+	output.output.Format.ChannelCount = channelCount
 }
 
 func (output *BufferedHttpStreamOutput) SetSampleRate(sampleRate int) {
-	output.output.SampleRate = int32(sampleRate)
+	output.output.Format.SampleRate = sampleRate
 }
 
 type BufferedHttpStreamOutputConfig struct {
