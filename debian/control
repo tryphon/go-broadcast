@@ -2,7 +2,7 @@ Source: go-broadcast
 Section: sound
 Priority: extra
 Maintainer: Alban Peignier <alban@tryphon.eu>
-Build-Depends: debhelper (>= 8.0.0), golang-go, libvorbis-dev, libasound2-dev, libsndfile1-dev, libopus-dev, libmp3lame-dev (>= 3.99.0), pkg-config, git-core, mercurial, bzr, ca-certificates
+Build-Depends: debhelper (>= 8.0.0), golang-go, libvorbis-dev, libasound2-dev, libsndfile1-dev, libopus-dev, libmp3lame-dev (>= 3.99.0), libfaac-dev, libaacplus-dev, pkg-config, git-core, mercurial, bzr, ca-certificates
 Standards-Version: 3.9.4
 Homepage: http://projects.tryphon.eu/projects/go-broadcast
 #Vcs-Git: git://projects.tryphon.eu/go-broadcast
