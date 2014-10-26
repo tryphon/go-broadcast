@@ -25,6 +25,13 @@ func NewStreamEncoder(format AudioFormat, writer io.Writer) StreamEncoder {
 			BitRate:      format.BitRate,
 			Writer:       writer,
 		}
+	case format.Encoding == "aac":
+		return &AACEncoder{
+			SampleRate:   int(format.SampleRate),
+			ChannelCount: int(format.ChannelCount),
+			BitRate:      format.BitRate,
+			Writer:       writer,
+		}
 	case format.Encoding == "ogg/vorbis":
 		encoder := OggEncoder{
 			Encoder: VorbisEncoder{
