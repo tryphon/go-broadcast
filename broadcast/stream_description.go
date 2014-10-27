@@ -44,6 +44,29 @@ func (description *StreamDescription) IcecastHeaders() map[string]string {
 	return headers
 }
 
+func (description *StreamDescription) ShoutcastHeaders() map[string]string {
+	headers := map[string]string{}
+
+	headers["icy-pub"] = description.PublicZeroOrOne()
+	headers["icy-bt"] = strconv.Itoa(description.BitRate)
+
+	var stringAttributes = []struct {
+		name  string
+		value string
+	}{
+		{"icy-name", description.Name},
+		{"icy-url", description.URL},
+		{"icy-genre", description.Genre},
+	}
+	for _, attribute := range stringAttributes {
+		if attribute.value != "" {
+			headers[attribute.name] = attribute.value
+		}
+	}
+
+	return headers
+}
+
 func (description *StreamDescription) PublicZeroOrOne() string {
 	if description.Public {
 		return "1"

@@ -3,15 +3,108 @@ package broadcast
 import (
 	"errors"
 	"flag"
+	shoutcast "github.com/tryphon/go-shoutcast"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
 
+type HttpStreamDialer interface {
+	Connect(output *HttpStreamOutput) (net.Conn, error)
+}
+
+type Icecast2Dialer struct {
+}
+
+func (dialer *Icecast2Dialer) Connect(output *HttpStreamOutput) (net.Conn, error) {
+	var connection net.Conn
+
+	dialTimeout := func(network, addr string) (net.Conn, error) {
+		newConnection, err := net.DialTimeout(network, addr, output.GetWriteTimeout())
+		if err != nil {
+			return nil, err
+		}
+
+		connection = newConnection
+		return newConnection, nil
+	}
+
+	transport := http.Transport{Dial: dialTimeout}
+	client := http.Client{Transport: &transport}
+
+	request, err := http.NewRequest("SOURCE", output.Target, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header.Add("Content-type", output.Format.ContentType())
+	request.Header.Add("User-Agent", "Go Broadcast v0")
+
+	if output.Description != nil {
+		for attribute, value := range output.Description.IcecastHeaders() {
+			request.Header.Add(attribute, value)
+		}
+	}
+
+	// request.SetBasicAuth("source", password)
+
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	Log.Debugf("HTTP Response : %s", response.Status)
+	if response.Status != "200 OK" {
+		err = errors.New("HTTP Error")
+		return nil, err
+	}
+
+	return connection, nil
+}
+
+type ShoutcastDialer struct {
+}
+
+func (dialer *ShoutcastDialer) Client(output *HttpStreamOutput) (*shoutcast.Client, error) {
+	targetURL, err := url.Parse(output.Target)
+	if err != nil {
+		return nil, err
+	}
+	password, ok := targetURL.User.Password()
+	if !ok {
+		return nil, errors.New("No specified password")
+	}
+
+	description := output.Description
+	if description == nil {
+		description = &StreamDescription{}
+	}
+	headers := description.ShoutcastHeaders()
+	headers["content-type"] = output.Format.ContentType()
+
+	client := &shoutcast.Client{
+		Host:     targetURL.Host,
+		Password: password,
+		Timeout:  output.GetWriteTimeout(),
+		Headers:  headers,
+	}
+	return client, nil
+}
+
+func (dialer *ShoutcastDialer) Connect(output *HttpStreamOutput) (net.Conn, error) {
+	client, err := dialer.Client(output)
+	if err != nil {
+		return nil, err
+	}
+	return client.Connect()
+}
+
 type HttpStreamOutput struct {
-	Target string
-	Format AudioFormat
+	Target     string
+	Format     AudioFormat
+	ServerType string
 
 	Provider AudioProvider
 
@@ -19,7 +112,7 @@ type HttpStreamOutput struct {
 
 	encoder StreamEncoder
 
-	client         http.Client
+	dialer         HttpStreamDialer
 	connection     net.Conn
 	connectedSince time.Time
 
@@ -29,33 +122,12 @@ type HttpStreamOutput struct {
 }
 
 func (output *HttpStreamOutput) Init() error {
-	transport := http.Transport{
-		Dial: output.dialTimeout,
+	if output.ServerType == "shoutcast" {
+		output.dialer = &ShoutcastDialer{}
+	} else {
+		output.dialer = &Icecast2Dialer{}
 	}
-
-	output.client = http.Client{
-		Transport: &transport,
-	}
-
 	return nil
-}
-
-func (output *HttpStreamOutput) dialTimeout(network, addr string) (net.Conn, error) {
-	connection, err := net.DialTimeout(network, addr, output.GetWriteTimeout())
-	if err != nil {
-		output.connection = nil
-		return nil, err
-	}
-
-	if tcpConnection, ok := connection.(*net.TCPConn); ok {
-		tcpConnection.SetNoDelay(true)
-		tcpConnection.SetLinger(0)
-	}
-
-	output.connection = connection
-	output.updateDeadline()
-
-	return connection, nil
 }
 
 func (output *HttpStreamOutput) updateDeadline() {
@@ -73,7 +145,7 @@ func (output *HttpStreamOutput) Write(buffer []byte) (int, error) {
 
 		output.updateDeadline()
 	} else {
-		Log.Printf("End of HTTP stream")
+		Log.Printf("End of HTTP stream (%v)", err)
 		output.Reset()
 	}
 	return wrote, err
@@ -86,34 +158,21 @@ func (output *HttpStreamOutput) metrics() *LocalMetrics {
 	return output.Metrics
 }
 
-func (output *HttpStreamOutput) createConnection() error {
-	request, err := http.NewRequest("SOURCE", output.Target, nil)
+func (output *HttpStreamOutput) createConnection() (err error) {
+	if output.dialer == nil {
+		return errors.New("No selected Dialer")
+	}
+	output.connection, err = output.dialer.Connect(output)
 	if err != nil {
 		return err
 	}
 
-	request.Header.Add("Content-type", output.Format.ContentType())
-	request.Header.Add("User-Agent", "Go Broadcast v0")
-
-	if output.Description != nil {
-		for attribute, value := range output.Description.IcecastHeaders() {
-			request.Header.Add(attribute, value)
-		}
+	if tcpConnection, ok := output.connection.(*net.TCPConn); ok {
+		tcpConnection.SetNoDelay(true)
+		tcpConnection.SetLinger(0)
 	}
 
-	// request.SetBasicAuth("source", password)
-
-	response, err := output.client.Do(request)
-	if err != nil {
-		return err
-	}
-
-	Log.Debugf("HTTP Response : %s", response.Status)
-	if response.Status != "200 OK" {
-		err = errors.New("HTTP Error")
-		return err
-	}
-
+	output.updateDeadline()
 	output.connectedSince = time.Now()
 
 	encoder := NewStreamEncoder(output.Format, output)
@@ -140,7 +199,7 @@ func (output *HttpStreamOutput) Run() {
 			err := output.createConnection()
 
 			if err != nil {
-				Log.Printf("HTTP Error : %s", err.Error())
+				Log.Printf("Connection Error : %s", err.Error())
 				time.Sleep(output.GetWaitOnError())
 			}
 		}
@@ -188,12 +247,14 @@ type HttpStreamOutputConfig struct {
 	Target      string
 	Format      string
 	Description StreamDescription
+	ServerType  string
 }
 
 func NewHttpStreamOutputConfig() HttpStreamOutputConfig {
 	return HttpStreamOutputConfig{
-		Target: "",
-		Format: "ogg/vorbis:vbr(q=5):2:44100",
+		Target:     "",
+		Format:     "ogg/vorbis:vbr(q=5):2:44100",
+		ServerType: "icecast2",
 	}
 }
 
@@ -202,12 +263,15 @@ func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) 
 
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
 	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), defaultConfig.Format, "The stream format")
+	flags.StringVar(&config.ServerType, strings.Join([]string{prefix, "servertype"}, "-"), defaultConfig.ServerType, "The type of stream server (icecast2 or shoutcast)")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
 	httpStreamOutput.Format = ParseAudioFormat(config.Format)
+	httpStreamOutput.ServerType = config.ServerType
 	if !config.Description.IsEmpty() {
 		httpStreamOutput.Description = &config.Description
 	}
+
 }

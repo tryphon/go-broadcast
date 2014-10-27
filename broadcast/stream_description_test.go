@@ -52,6 +52,30 @@ func TestStreamDescription_IcecastHeaders(t *testing.T) {
 	}
 }
 
+func TestStreamDescription_ShoutcastHeaders(t *testing.T) {
+	description := testStreamDescription()
+
+	expectedHeaders := map[string]string{
+		"icy-bt":    "96000",
+		"icy-pub":   "1",
+		"icy-name":  "GoBroadcast test stream",
+		"icy-url":   "http://projects.tryphon.eu/projects/go-broadcast",
+		"icy-genre": "Test",
+	}
+	if !reflect.DeepEqual(description.ShoutcastHeaders(), expectedHeaders) {
+		t.Errorf("Wrong icecast headers :\n got: %v\nwant: %v", description.ShoutcastHeaders(), expectedHeaders)
+	}
+
+	description = &StreamDescription{}
+	expectedHeaders = map[string]string{
+		"icy-bt":  "0",
+		"icy-pub": "0",
+	}
+	if !reflect.DeepEqual(description.ShoutcastHeaders(), expectedHeaders) {
+		t.Errorf("Wrong icecast headers :\n got: %v\nwant: %v", description.ShoutcastHeaders(), expectedHeaders)
+	}
+}
+
 func TestStreamDescription_PublicZeroOrOne(t *testing.T) {
 	description := StreamDescription{}
 
