@@ -56,7 +56,7 @@ func TestStreamDescription_ShoutcastHeaders(t *testing.T) {
 	description := testStreamDescription()
 
 	expectedHeaders := map[string]string{
-		"icy-bt":    "96000",
+		"icy-br":    "96",
 		"icy-pub":   "1",
 		"icy-name":  "GoBroadcast test stream",
 		"icy-url":   "http://projects.tryphon.eu/projects/go-broadcast",
@@ -68,7 +68,7 @@ func TestStreamDescription_ShoutcastHeaders(t *testing.T) {
 
 	description = &StreamDescription{}
 	expectedHeaders = map[string]string{
-		"icy-bt":  "0",
+		"icy-br":  "0",
 		"icy-pub": "0",
 	}
 	if !reflect.DeepEqual(description.ShoutcastHeaders(), expectedHeaders) {

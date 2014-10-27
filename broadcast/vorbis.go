@@ -109,7 +109,10 @@ func (decoder *VorbisDecoder) newAudio(pcmArray ***float32, sampleCount int) *Au
 }
 
 type VorbisEncoder struct {
-	Quality      float32
+	Quality float32
+	BitRate int
+	Mode    string
+
 	ChannelCount int
 	SampleRate   int
 
@@ -130,7 +133,22 @@ func (encoder *VorbisEncoder) Init() error {
 	if encoder.SampleRate == 0 {
 		encoder.SampleRate = 44100
 	}
-	if vorbisenc.InitVbr(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), encoder.Quality) != 0 {
+	if encoder.Mode == "" {
+		encoder.Mode = "vbr"
+	}
+
+	var initResult int
+
+	switch {
+	case encoder.Mode == "vbr":
+		initResult = vorbisenc.InitVbr(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), encoder.Quality)
+	case encoder.Mode == "cbr":
+		initResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), int32(encoder.BitRate), int32(encoder.BitRate), int32(encoder.BitRate))
+	case encoder.Mode == "abr":
+		initResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), -1, int32(encoder.BitRate), -1)
+	}
+
+	if initResult != 0 {
 		return errors.New("Can't initialize vorbis encoder")
 	}
 

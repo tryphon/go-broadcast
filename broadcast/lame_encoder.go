@@ -23,7 +23,10 @@ const (
 )
 
 type LameEncoder struct {
-	Quality      float32
+	Quality float32
+	BitRate int
+	Mode    string
+
 	ChannelCount int
 	SampleRate   int
 
@@ -39,6 +42,9 @@ func (encoder *LameEncoder) Init() error {
 	if encoder.SampleRate == 0 {
 		encoder.SampleRate = 44100
 	}
+	if encoder.Mode == "" {
+		encoder.Mode = "vbr"
+	}
 
 	handle := C.lame_init()
 	if handle == nil {
@@ -51,8 +57,16 @@ func (encoder *LameEncoder) Init() error {
 	C.lame_set_quality(handle, C.int(encoder.LameQuality()))
 	C.lame_set_mode(handle, (C.MPEG_mode)(encoder.LameMode()))
 
-	C.lame_set_VBR(handle, C.vbr_mtrh)
-	C.lame_set_VBR_q(handle, C.int(encoder.LameQuality()))
+	switch {
+	case encoder.Mode == "vbr":
+		C.lame_set_VBR(handle, C.vbr_mtrh)
+		C.lame_set_VBR_q(handle, C.int(encoder.LameQuality()))
+	case encoder.Mode == "cbr":
+		C.lame_set_brate(handle, C.int(encoder.BitRate))
+	case encoder.Mode == "abr":
+		C.lame_set_VBR(handle, C.vbr_abr)
+		C.lame_set_VBR_mean_bitrate_kbps(handle, C.int(encoder.BitRate))
+	}
 
 	initResults := C.lame_init_params(handle)
 	if initResults == -1 {

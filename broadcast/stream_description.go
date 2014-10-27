@@ -48,7 +48,7 @@ func (description *StreamDescription) ShoutcastHeaders() map[string]string {
 	headers := map[string]string{}
 
 	headers["icy-pub"] = description.PublicZeroOrOne()
-	headers["icy-bt"] = strconv.Itoa(description.BitRate)
+	headers["icy-br"] = strconv.Itoa(description.BitRate / 1000)
 
 	var stringAttributes = []struct {
 		name  string

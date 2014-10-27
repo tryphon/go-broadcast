@@ -44,6 +44,7 @@ func (dialer *Icecast2Dialer) Connect(output *HttpStreamOutput) (net.Conn, error
 
 	if output.Description != nil {
 		for attribute, value := range output.Description.IcecastHeaders() {
+			Log.Debugf("IceCast header: %s=%s", attribute, value)
 			request.Header.Add(attribute, value)
 		}
 	}
@@ -83,6 +84,8 @@ func (dialer *ShoutcastDialer) Client(output *HttpStreamOutput) (*shoutcast.Clie
 	}
 	headers := description.ShoutcastHeaders()
 	headers["content-type"] = output.Format.ContentType()
+
+	Log.Debugf("ShoutCast headers: %v", headers)
 
 	client := &shoutcast.Client{
 		Host:     targetURL.Host,
@@ -272,6 +275,14 @@ func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) 
 	httpStreamOutput.ServerType = config.ServerType
 	if !config.Description.IsEmpty() {
 		httpStreamOutput.Description = &config.Description
+	} else {
+		if httpStreamOutput.ServerType == "shoutcast" {
+			httpStreamOutput.Description = &StreamDescription{}
+		}
 	}
 
+	if httpStreamOutput.Description != nil {
+		Log.Debugf("Define BitRate in description (%d)", httpStreamOutput.Format.BitRate)
+		httpStreamOutput.Description.BitRate = httpStreamOutput.Format.BitRate
+	}
 }

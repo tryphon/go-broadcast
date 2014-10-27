@@ -34,20 +34,32 @@ func ParseAudioFormat(definition string) AudioFormat {
 	if len(parts) >= 2 {
 		modePart := parts[1]
 
-		vbrRegExp := regexp.MustCompile("^vbr\\(q=([0-9]+)\\)$")
-		cbrRegExp := regexp.MustCompile("^cbr\\(b=([0-9]+)\\)$")
+		modeRegExp := regexp.MustCompile("^(cbr|abr|vbr)(\\((.*)\\))?$")
+		if modeRegExp.MatchString(modePart) {
+			match := modeRegExp.FindStringSubmatch(modePart)
+			audio.Mode = match[1]
 
-		switch {
-		case vbrRegExp.MatchString(modePart):
-			audio.Mode = "vbr"
-			userQuality, _ := strconv.Atoi(vbrRegExp.FindStringSubmatch(modePart)[1])
-			if userQuality >= 0 && userQuality <= 10 {
-				audio.Quality = float32(userQuality) / 10
+			if len(match) > 3 {
+				attributeRegExp := regexp.MustCompile("^([bq])=([0-9]+)$")
+				for _, attribute := range strings.Split(match[3], ",") {
+					if attributeRegExp.MatchString(attribute) {
+						match := attributeRegExp.FindStringSubmatch(attribute)
+						name := match[1]
+						value := match[2]
+
+						switch {
+						case name == "b":
+							userBitRate, _ := strconv.Atoi(value)
+							audio.BitRate = userBitRate * 1000
+						case name == "q":
+							userQuality, _ := strconv.Atoi(value)
+							if userQuality >= 0 && userQuality <= 10 {
+								audio.Quality = float32(userQuality) / 10
+							}
+						}
+					}
+				}
 			}
-		case cbrRegExp.MatchString(modePart):
-			audio.Mode = "cbr"
-			userBitRate, _ := strconv.Atoi(cbrRegExp.FindStringSubmatch(modePart)[1])
-			audio.BitRate = userBitRate * 1000
 		}
 	}
 
