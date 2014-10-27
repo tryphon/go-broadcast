@@ -15,6 +15,8 @@ type HttpStreamOutput struct {
 
 	Provider AudioProvider
 
+	Description *StreamDescription
+
 	encoder StreamEncoder
 
 	client         http.Client
@@ -92,6 +94,12 @@ func (output *HttpStreamOutput) createConnection() error {
 
 	request.Header.Add("Content-type", output.Format.ContentType())
 	request.Header.Add("User-Agent", "Go Broadcast v0")
+
+	if output.Description != nil {
+		for attribute, value := range output.Description.IcecastHeaders() {
+			request.Header.Add(attribute, value)
+		}
+	}
 
 	// request.SetBasicAuth("source", password)
 
@@ -177,8 +185,9 @@ func (output *HttpStreamOutput) SampleRate() int {
 }
 
 type HttpStreamOutputConfig struct {
-	Target string
-	Format string
+	Target      string
+	Format      string
+	Description StreamDescription
 }
 
 func NewHttpStreamOutputConfig() HttpStreamOutputConfig {
@@ -198,4 +207,7 @@ func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
 	httpStreamOutput.Target = config.Target
 	httpStreamOutput.Format = ParseAudioFormat(config.Format)
+	if !config.Description.IsEmpty() {
+		httpStreamOutput.Description = &config.Description
+	}
 }
