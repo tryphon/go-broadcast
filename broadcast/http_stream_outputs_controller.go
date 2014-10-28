@@ -64,8 +64,12 @@ func (controller *HttpStreamOutputsController) Status() HttpStreamOutputsStatus 
 
 func (controller *HttpStreamOutputsController) Index(response http.ResponseWriter) {
 	response.Header().Set("Content-Type", "application/json")
-	jsonBytes, _ := json.Marshal(controller.Status())
-	response.Write(jsonBytes)
+	jsonBytes, err := json.Marshal(controller.Status())
+	if err == nil {
+		response.Write(jsonBytes)
+	} else {
+		controller.fatal(response, err)
+	}
 }
 
 func (controller *HttpStreamOutputsController) Show(response http.ResponseWriter, identifier string) {
@@ -75,8 +79,12 @@ func (controller *HttpStreamOutputsController) Show(response http.ResponseWriter
 	stream := controller.outputs.Stream(identifier)
 
 	if stream != nil {
-		jsonBytes, _ := json.Marshal(stream.Status())
-		response.Write(jsonBytes)
+		jsonBytes, err := json.Marshal(stream.Status())
+		if err == nil {
+			response.Write(jsonBytes)
+		} else {
+			controller.fatal(response, err)
+		}
 	} else {
 		http.Error(response, fmt.Sprintf("Stream not found: '%s'", identifier), 404)
 	}

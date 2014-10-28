@@ -77,6 +77,10 @@ func NewIoEfficiencyMeterHistory(size int) *IoEfficiencyMeterHistory {
 	}
 }
 
+func (history *IoEfficiencyMeterHistory) IsEmpty() bool {
+	return len(history.Efficiencies) == 0
+}
+
 func (history *IoEfficiencyMeterHistory) Push(efficiency float64) {
 	tail := history.Efficiencies
 	if len(history.Efficiencies) >= history.size {

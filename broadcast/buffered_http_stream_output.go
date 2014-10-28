@@ -75,14 +75,17 @@ func (output *BufferedHttpStreamOutput) Config() BufferedHttpStreamOutputConfig 
 }
 
 func (output *BufferedHttpStreamOutput) Status() BufferedHttpStreamOutputStatus {
-	return BufferedHttpStreamOutputStatus{
+	status := BufferedHttpStreamOutputStatus{
 		BufferedHttpStreamOutputConfig: output.Config(),
 		AdminStatus:                    output.AdminStatus(),
 		OperationalStatus:              output.OperationalStatus(),
 		ConnectionDuration:             output.output.ConnectionDuration(),
 		Efficiency:                     output.efficiencyMeter.Efficiency(),
-		EfficiencyHistory:              *output.efficiencyMeter.History(),
 	}
+	if efficiencyHistory := output.efficiencyMeter.History(); !efficiencyHistory.IsEmpty() {
+		status.EfficiencyHistory = *efficiencyHistory
+	}
+	return status
 }
 
 func (output *BufferedHttpStreamOutput) AdminStatus() string {

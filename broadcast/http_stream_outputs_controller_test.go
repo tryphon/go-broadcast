@@ -38,7 +38,7 @@ func TestHttpStreamOutputsController_Index(t *testing.T) {
 	controller.ServeHTTP(response, request)
 
 	if response.Code != 200 {
-		t.Errorf("Wrong response code :\n got: %v\nwant: %v", response.Code, 200)
+		t.Errorf("Wrong response code :\n got: %v (%s)\nwant: %v", response.Code, response.Body.String(), 200)
 	}
 
 	jq := jsonQuery(response.Body.String())
