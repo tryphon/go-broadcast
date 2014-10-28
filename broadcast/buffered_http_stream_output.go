@@ -20,6 +20,8 @@ type BufferedHttpStreamOutput struct {
 
 	Metrics *LocalMetrics
 	config  *BufferedHttpStreamOutputConfig
+
+	efficiencyMeter IoEfficiencyMeter
 }
 
 func NewBufferedHttpStreamOutput() *BufferedHttpStreamOutput {
@@ -72,6 +74,25 @@ func (output *BufferedHttpStreamOutput) Config() BufferedHttpStreamOutputConfig 
 	return *output.config
 }
 
+func (output *BufferedHttpStreamOutput) Status() BufferedHttpStreamOutputStatus {
+	return BufferedHttpStreamOutputStatus{
+		BufferedHttpStreamOutputConfig: output.Config(),
+		AdminStatus:                    output.AdminStatus(),
+		OperationalStatus:              output.OperationalStatus(),
+		ConnectionDuration:             output.output.ConnectionDuration(),
+		Efficiency:                     output.efficiencyMeter.Efficiency(),
+		EfficiencyHistory:              *output.efficiencyMeter.History(),
+	}
+}
+
+func (output *BufferedHttpStreamOutput) AdminStatus() string {
+	return output.output.AdminStatus()
+}
+
+func (output *BufferedHttpStreamOutput) OperationalStatus() string {
+	return output.output.OperationalStatus()
+}
+
 func (output *BufferedHttpStreamOutput) Init() error {
 	if output.Identifier == "" {
 		output.Identifier = output.defaultIdentifier()
@@ -99,11 +120,13 @@ func (output *BufferedHttpStreamOutput) Read() (audio *Audio) {
 		time.Sleep(100 * time.Millisecond)
 		audio = output.buffer.Read()
 	}
+	output.efficiencyMeter.Output(int64(audio.SampleCount()))
 	return
 }
 
 func (output *BufferedHttpStreamOutput) AudioOut(audio *Audio) {
 	output.buffer.AudioOut(audio)
+	output.efficiencyMeter.Input(int64(audio.SampleCount()))
 }
 
 func (output *BufferedHttpStreamOutput) Run() {
@@ -122,6 +145,15 @@ type BufferedHttpStreamOutputConfig struct {
 	HttpStreamOutputConfig
 	Identifier     string
 	BufferDuration time.Duration
+}
+
+type BufferedHttpStreamOutputStatus struct {
+	BufferedHttpStreamOutputConfig
+	AdminStatus        string // "started" / "stopped"
+	OperationalStatus  string // "connected" / "disconnected"
+	ConnectionDuration time.Duration
+	Efficiency         float64
+	EfficiencyHistory  IoEfficiencyMeterHistory
 }
 
 func NewBufferedHttpStreamOutputConfig() BufferedHttpStreamOutputConfig {

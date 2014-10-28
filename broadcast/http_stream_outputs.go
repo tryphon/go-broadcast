@@ -79,6 +79,16 @@ func (output *HttpStreamOutputs) Config() HttpStreamOutputsConfig {
 	return *output.config
 }
 
+func (output *HttpStreamOutputs) Status() HttpStreamOutputsStatus {
+	status := HttpStreamOutputsStatus{
+		Streams: make([]BufferedHttpStreamOutputStatus, 0),
+	}
+	for _, stream := range output.streams {
+		status.Streams = append(status.Streams, stream.Status())
+	}
+	return status
+}
+
 func (output *HttpStreamOutputs) Setup(config *HttpStreamOutputsConfig) {
 	config.Compact()
 	for index, _ := range config.Streams {
@@ -111,6 +121,10 @@ func (output *HttpStreamOutputs) Destroy(identifier string) *BufferedHttpStreamO
 
 type HttpStreamOutputsConfig struct {
 	Streams []BufferedHttpStreamOutputConfig
+}
+
+type HttpStreamOutputsStatus struct {
+	Streams []BufferedHttpStreamOutputStatus
 }
 
 func (config *HttpStreamOutputsConfig) Empty() bool {

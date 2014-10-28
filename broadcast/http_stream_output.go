@@ -194,6 +194,22 @@ func (output *HttpStreamOutput) Stop() {
 	Log.Printf("Stop")
 }
 
+func (output *HttpStreamOutput) AdminStatus() string {
+	if output.started {
+		return "started"
+	} else {
+		return "stopped"
+	}
+}
+
+func (output *HttpStreamOutput) OperationalStatus() string {
+	if output.connection != nil {
+		return "connected"
+	} else {
+		return "disconnected"
+	}
+}
+
 func (output *HttpStreamOutput) Run() {
 	output.started = true
 	Log.Printf("Start")
@@ -230,6 +246,7 @@ func (output *HttpStreamOutput) Reset() {
 	if output.connection != nil {
 		output.connection.Close()
 		output.connection = nil
+		output.connectedSince = time.Time{}
 		output.encoder = nil
 	}
 }
