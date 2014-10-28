@@ -165,6 +165,7 @@ func (output *HttpStreamOutput) createConnection() (err error) {
 	if output.dialer == nil {
 		return errors.New("No selected Dialer")
 	}
+	output.metrics().Counter("http.AttemptedConnections").Inc(1)
 	output.connection, err = output.dialer.Connect(output)
 	if err != nil {
 		return err
@@ -247,6 +248,7 @@ func (output *HttpStreamOutput) Reset() {
 		output.connection.Close()
 		output.connection = nil
 		output.connectedSince = time.Time{}
+		output.metrics().Gauge("http.ConnectionDuration").Update(0)
 		output.encoder = nil
 	}
 }
