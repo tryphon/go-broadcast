@@ -106,6 +106,7 @@ func (output *BufferedHttpStreamOutput) Init() error {
 
 	output.memoryAudioBuffer.Metrics = output.metrics()
 	output.output.Metrics = output.metrics()
+	output.efficiencyMeter.Metrics = output.metrics()
 
 	output.output.Provider = output
 

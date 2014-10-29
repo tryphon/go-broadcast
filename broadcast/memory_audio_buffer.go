@@ -1,8 +1,6 @@
 package broadcast
 
-import (
-	metrics "github.com/tryphon/go-metrics"
-)
+import ()
 
 const maxAudioBufferSize uint32 = 4096
 
@@ -40,7 +38,7 @@ func (buffer *MemoryAudioBuffer) metrics() *LocalMetrics {
 func (buffer *MemoryAudioBuffer) changeSampleCount(delta int) {
 	buffer.sampleCount += uint32(delta)
 	buffer.metrics().Gauge("buffer.Size").Update(int64(buffer.sampleCount))
-	buffer.metrics().Histogram("buffer.SizeHistory", metrics.NewExpDecaySample(1028, 0.015)).Update(int64(buffer.sampleCount))
+	buffer.metrics().Histogram("buffer.SizeHistory").Update(int64(buffer.sampleCount))
 }
 
 func (buffer *MemoryAudioBuffer) AudioOut(audio *Audio) {

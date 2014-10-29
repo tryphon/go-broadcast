@@ -12,6 +12,15 @@ type IoEfficiencyMeter struct {
 
 	timeWindowDuration time.Duration
 	history            *IoEfficiencyMeterHistory
+
+	Metrics *LocalMetrics
+}
+
+func (meter *IoEfficiencyMeter) metrics() *LocalMetrics {
+	if meter.Metrics == nil {
+		meter.Metrics = &LocalMetrics{}
+	}
+	return meter.Metrics
 }
 
 func (meter *IoEfficiencyMeter) checkTimeWindow() {
@@ -23,8 +32,15 @@ func (meter *IoEfficiencyMeter) checkTimeWindow() {
 
 	if meter.timeMark == 0 || meter.timeMark != timeMark {
 		meter.timeMark = timeMark
-		meter.History().Push(meter.Efficiency())
+
+		savedEfficiency := meter.Efficiency()
 		meter.Reset()
+
+		meter.History().Push(savedEfficiency)
+
+		savedEfficiencyInPercentage := int64(savedEfficiency * 100)
+		meter.metrics().Gauge("Efficiency").Update(savedEfficiencyInPercentage)
+		meter.metrics().Histogram("EfficiencyHistory").Update(savedEfficiencyInPercentage)
 	}
 }
 

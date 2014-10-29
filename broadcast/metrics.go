@@ -29,8 +29,8 @@ func (local *LocalMetrics) Gauge(name string) metrics.Gauge {
 	return metrics.GetOrRegisterGauge(local.Name(name), nil)
 }
 
-func (local *LocalMetrics) Histogram(name string, sample metrics.Sample) metrics.Histogram {
-	return metrics.GetOrRegisterHistogram(local.Name(name), nil, sample)
+func (local *LocalMetrics) Histogram(name string) metrics.Histogram {
+	return metrics.GetOrRegisterHistogram(local.Name(name), nil, metrics.NewExpDecaySample(1028, 0.015))
 }
 
 type MetricsReadCloser struct {
