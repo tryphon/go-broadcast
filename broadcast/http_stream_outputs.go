@@ -82,6 +82,7 @@ func (output *HttpStreamOutputs) Config() HttpStreamOutputsConfig {
 func (output *HttpStreamOutputs) Status() HttpStreamOutputsStatus {
 	status := HttpStreamOutputsStatus{
 		Streams: make([]BufferedHttpStreamOutputStatus, 0),
+		Events:  EventLog.Events(),
 	}
 	for _, stream := range output.streams {
 		status.Streams = append(status.Streams, stream.Status())
@@ -125,6 +126,7 @@ type HttpStreamOutputsConfig struct {
 
 type HttpStreamOutputsStatus struct {
 	Streams []BufferedHttpStreamOutputStatus
+	Events  []*Event
 }
 
 func (config *HttpStreamOutputsConfig) Empty() bool {

@@ -13,7 +13,8 @@ type IoEfficiencyMeter struct {
 	timeWindowDuration time.Duration
 	history            *IoEfficiencyMeterHistory
 
-	Metrics *LocalMetrics
+	Metrics  *LocalMetrics
+	EventLog *LocalEventLog
 }
 
 func (meter *IoEfficiencyMeter) metrics() *LocalMetrics {
@@ -21,6 +22,13 @@ func (meter *IoEfficiencyMeter) metrics() *LocalMetrics {
 		meter.Metrics = &LocalMetrics{}
 	}
 	return meter.Metrics
+}
+
+func (meter *IoEfficiencyMeter) eventLog() *LocalEventLog {
+	if meter.EventLog == nil {
+		meter.EventLog = &LocalEventLog{}
+	}
+	return meter.EventLog
 }
 
 func (meter *IoEfficiencyMeter) checkTimeWindow() {
@@ -35,6 +43,10 @@ func (meter *IoEfficiencyMeter) checkTimeWindow() {
 
 		savedEfficiency := meter.Efficiency()
 		meter.Reset()
+
+		if savedEfficiency <= 0.9 {
+			meter.eventLog().NewEvent("Bad network performance")
+		}
 
 		meter.History().Push(savedEfficiency)
 

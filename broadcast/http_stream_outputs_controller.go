@@ -51,6 +51,8 @@ func (controller *HttpStreamOutputsController) ServeHTTP(response http.ResponseW
 		case request.Method == "POST":
 			controller.Create(response, body)
 		}
+	case path == "/events.json" && request.Method == "GET":
+		controller.IndexEvents(response)
 	}
 }
 
@@ -64,7 +66,17 @@ func (controller *HttpStreamOutputsController) Status() HttpStreamOutputsStatus 
 
 func (controller *HttpStreamOutputsController) Index(response http.ResponseWriter) {
 	response.Header().Set("Content-Type", "application/json")
-	jsonBytes, err := json.Marshal(controller.Status())
+	jsonBytes, err := json.Marshal(controller.Status().Streams)
+	if err == nil {
+		response.Write(jsonBytes)
+	} else {
+		controller.fatal(response, err)
+	}
+}
+
+func (controller *HttpStreamOutputsController) IndexEvents(response http.ResponseWriter) {
+	response.Header().Set("Content-Type", "application/json")
+	jsonBytes, err := json.Marshal(controller.Status().Events)
 	if err == nil {
 		response.Write(jsonBytes)
 	} else {

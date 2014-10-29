@@ -91,6 +91,7 @@ func (command *HttpSource) Main(arguments []string) {
 	httpStreamOutputsController := broadcast.NewHttpStreamOutputsController(command.httpStreamOutputs)
 	command.httpServer.Register("/streams.json", httpStreamOutputsController)
 	command.httpServer.Register("/streams/", httpStreamOutputsController)
+	command.httpServer.Register("/events.json", httpStreamOutputsController)
 
 	configController := broadcast.NewConfigController(command)
 	command.httpServer.Register("/config.json", configController)

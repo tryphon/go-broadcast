@@ -41,11 +41,11 @@ func TestHttpStreamOutputsController_Index(t *testing.T) {
 		t.Errorf("Wrong response code :\n got: %v (%s)\nwant: %v", response.Code, response.Body.String(), 200)
 	}
 
-	jq := jsonQuery(response.Body.String())
-	firstTarget, err := jq.String("Streams", "0", "Target")
-	if err != nil {
-		t.Fatal(err)
-	}
+	data := make([]map[string]interface{}, 0)
+	decoder := json.NewDecoder(strings.NewReader(response.Body.String()))
+	decoder.Decode(&data)
+
+	firstTarget := data[0]["Target"]
 
 	if firstTarget != "http://source:secret@stream-in.tryphon.eu:8000/stagebox1.mp3" {
 		t.Errorf(" :\n got: %v\nwant: %v", firstTarget, "http://source:secret@stream-in.tryphon.eu:8000/stagebox1.mp3")

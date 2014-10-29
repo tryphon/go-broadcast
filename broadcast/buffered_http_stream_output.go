@@ -15,11 +15,15 @@ type BufferedHttpStreamOutput struct {
 	output *HttpStreamOutput
 	buffer AudioBuffer
 
+	started bool
+
 	unfillAudioBuffer *UnfillAudioBuffer
 	memoryAudioBuffer *MemoryAudioBuffer
 
-	Metrics *LocalMetrics
-	config  *BufferedHttpStreamOutputConfig
+	Metrics  *LocalMetrics
+	EventLog *LocalEventLog
+
+	config *BufferedHttpStreamOutputConfig
 
 	efficiencyMeter IoEfficiencyMeter
 }
@@ -52,12 +56,21 @@ func (output *BufferedHttpStreamOutput) metrics() *LocalMetrics {
 	return output.Metrics
 }
 
+func (output *BufferedHttpStreamOutput) eventLog() *LocalEventLog {
+	if output.EventLog == nil {
+		output.EventLog = &LocalEventLog{Source: fmt.Sprintf("stream-%s", output.Identifier)}
+	}
+	return output.EventLog
+}
+
 func (output *BufferedHttpStreamOutput) Start() {
 	output.output.Start()
+	output.started = true
 }
 
 func (output *BufferedHttpStreamOutput) Stop() {
 	output.output.Stop()
+	output.started = false
 }
 
 func (output *BufferedHttpStreamOutput) Setup(config *BufferedHttpStreamOutputConfig) {
@@ -81,6 +94,7 @@ func (output *BufferedHttpStreamOutput) Status() BufferedHttpStreamOutputStatus 
 		OperationalStatus:              output.OperationalStatus(),
 		ConnectionDuration:             output.output.ConnectionDuration(),
 		Efficiency:                     output.efficiencyMeter.Efficiency(),
+		Events:                         output.eventLog().Events(),
 	}
 	if efficiencyHistory := output.efficiencyMeter.History(); !efficiencyHistory.IsEmpty() {
 		status.EfficiencyHistory = *efficiencyHistory
@@ -108,6 +122,9 @@ func (output *BufferedHttpStreamOutput) Init() error {
 	output.output.Metrics = output.metrics()
 	output.efficiencyMeter.Metrics = output.metrics()
 
+	output.output.EventLog = output.eventLog()
+	output.efficiencyMeter.EventLog = output.eventLog()
+
 	output.output.Provider = output
 
 	err := output.output.Init()
@@ -122,8 +139,13 @@ func (output *BufferedHttpStreamOutput) Read() (audio *Audio) {
 	audio = output.buffer.Read()
 	for audio == nil {
 		time.Sleep(100 * time.Millisecond)
+		if !output.started {
+			return nil
+		}
+
 		audio = output.buffer.Read()
 	}
+
 	output.efficiencyMeter.Output(int64(audio.SampleCount()))
 	return
 }
@@ -158,6 +180,7 @@ type BufferedHttpStreamOutputStatus struct {
 	ConnectionDuration time.Duration
 	Efficiency         float64
 	EfficiencyHistory  IoEfficiencyMeterHistory
+	Events             []*Event
 }
 
 func NewBufferedHttpStreamOutputConfig() BufferedHttpStreamOutputConfig {
