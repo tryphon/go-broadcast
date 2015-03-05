@@ -19,6 +19,8 @@ func (server *HttpServer) Init() error {
 		http.HandleFunc("/metrics.json", server.metricsJSON)
 
 		if server.SoundMeterAudioHandler != nil {
+			Log.Printf("Enable soundmeter http/websocket API")
+
 			http.HandleFunc("/soundmeter.json", server.soundMeterJSON)
 			http.Handle("/soundmeter.ws", websocket.Handler(server.soundMeterWebSocket))
 		}

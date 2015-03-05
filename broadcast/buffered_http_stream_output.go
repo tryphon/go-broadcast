@@ -123,7 +123,11 @@ func (output *BufferedHttpStreamOutput) Init() error {
 	output.efficiencyMeter.Metrics = output.metrics()
 
 	output.output.EventLog = output.eventLog()
-	output.efficiencyMeter.EventLog = output.eventLog()
+	output.efficiencyMeter.Handler = func(efficiency float64) {
+		if output.output.IsConnected() {
+			output.eventLog().NewEvent("Bad network performance")
+		}
+	}
 
 	output.output.Provider = output
 

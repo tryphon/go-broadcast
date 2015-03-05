@@ -120,8 +120,12 @@ func (output *HttpStreamOutput) AdminStatus() string {
 	}
 }
 
+func (output *HttpStreamOutput) IsConnected() bool {
+	return output.connection != nil
+}
+
 func (output *HttpStreamOutput) OperationalStatus() string {
-	if output.connection != nil {
+	if output.IsConnected() {
 		return "connected"
 	} else {
 		return "disconnected"
