@@ -8,6 +8,29 @@ import (
 	"time"
 )
 
+func TestCommandConfig_Flags(t *testing.T) {
+	config := CommandConfig{}
+
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	config.BaseFlags(flags)
+
+	flags.Parse(strings.Split("-log-debug -log-syslog", " "))
+	if !config.Log.Debug {
+		t.Errorf("Log debug should be enabled :\n got: %v\nwant: %v", config.Log.Debug, true)
+	}
+	if !config.Log.Syslog {
+		t.Errorf("Log syslog should be enabled :\n got: %v\nwant: %v", config.Log.Syslog, true)
+	}
+
+	flags.Parse(strings.Split("-profiler-cpu=cpu-output -profiler-memory=memory-output", " "))
+	if config.Profiler.CPU != "cpu-output" {
+		t.Errorf("Wrong config CPU :\n got: %v\nwant: %v", config.Profiler.CPU, "cpu-output")
+	}
+	if config.Profiler.Memory != "memory-output" {
+		t.Errorf("Wrong config Memory :\n got: %v\nwant: %v", config.Profiler.Memory, "memory-output")
+	}
+}
+
 func TestAlsaInputConfig_Flags(t *testing.T) {
 	config := AlsaInputConfig{}
 

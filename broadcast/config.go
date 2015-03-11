@@ -14,6 +14,7 @@ type CommandConfig struct {
 	HttpServer HttpServerConfig
 	Log        LogConfig
 	Metrics    MetricsConfig
+	Profiler   ProfilerConfig
 }
 
 func LoadConfig(file string, config interface{}) error {
@@ -64,12 +65,14 @@ func (config *CommandConfig) BaseFlags(flags *flag.FlagSet) {
 	config.HttpServer.Flags(flags, "http")
 	config.Log.Flags(flags, "log")
 	config.Metrics.Flags(flags, "metrics")
+	config.Profiler.Flags(flags, "profiler")
 }
 
 func (config *CommandConfig) BaseApply(httpServer *HttpServer) {
 	config.HttpServer.Apply(httpServer)
 	config.Log.Apply()
 	config.Metrics.Apply()
+	config.Profiler.Apply()
 }
 
 type UDPClientConfig struct {
