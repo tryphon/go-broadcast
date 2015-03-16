@@ -98,6 +98,8 @@ type OggEncoder struct {
 }
 
 func (encoder *OggEncoder) Init() error {
+	encoder.Encoder.PacketHandler = encoder
+
 	encoder.oss.Init(rand.Int31())
 	encoder.Encoder.Init()
 	encoder.Flush()

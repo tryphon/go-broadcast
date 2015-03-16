@@ -46,7 +46,6 @@ func NewStreamEncoder(format AudioFormat, writer io.Writer) StreamEncoder {
 			},
 			Writer: writer,
 		}
-		encoder.Encoder.PacketHandler = &encoder
 		return &encoder
 	}
 	return nil
