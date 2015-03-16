@@ -133,3 +133,8 @@ func (encoder *OggEncoder) AudioOut(audio *Audio) {
 	encoder.Encoder.AudioOut(audio)
 	encoder.writeAvailablePages()
 }
+
+func (encoder *OggEncoder) Close() {
+	encoder.Encoder.Close()
+	encoder.Flush()
+}
