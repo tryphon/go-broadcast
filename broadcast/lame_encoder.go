@@ -54,7 +54,8 @@ func (encoder *LameEncoder) Init() error {
 	C.lame_set_num_channels(handle, C.int(encoder.ChannelCount))
 	C.lame_set_in_samplerate(handle, C.int(encoder.SampleRate))
 
-	C.lame_set_quality(handle, C.int(encoder.LameQuality()))
+	// Use "recommended" quality, used by default for VBR
+	C.lame_set_quality(handle, 2)
 	C.lame_set_mode(handle, (C.MPEG_mode)(encoder.LameMode()))
 
 	switch {
