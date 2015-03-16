@@ -98,6 +98,7 @@ func (output *HttpStreamOutput) createConnection() (err error) {
 	encoder := NewStreamEncoder(output.Format, output)
 	encoder.Init()
 
+	Log.Debugf("New encoder")
 	output.encoder = encoder
 	return nil
 }
@@ -110,6 +111,8 @@ func (output *HttpStreamOutput) Start() {
 func (output *HttpStreamOutput) Stop() {
 	output.started = false
 	output.eventLog().NewEvent("Stop")
+	output.Reset()
+	output.eventLog().NewEvent("Stopped")
 }
 
 func (output *HttpStreamOutput) AdminStatus() string {
@@ -149,16 +152,13 @@ func (output *HttpStreamOutput) Run() {
 		if output.connection != nil && output.encoder != nil {
 			audio := output.Provider.Read()
 			// audio can be nil when stopped
-			if audio != nil {
+			if audio != nil && output.encoder != nil {
 				output.metrics().Counter("http.Samples").Inc(int64(audio.SampleCount()))
 				output.metrics().Gauge("http.ConnectionDuration").Update(int64(output.ConnectionDuration().Seconds()))
 				output.encoder.AudioOut(audio)
 			}
 		}
 	}
-
-	output.Reset()
-	output.eventLog().NewEvent("Stopped")
 }
 
 func (output *HttpStreamOutput) GetWriteTimeout() time.Duration {
@@ -175,9 +175,13 @@ func (output *HttpStreamOutput) Reset() {
 		output.connection = nil
 
 		output.eventLog().NewEvent("Disconnected")
-
 		output.connectedSince = time.Time{}
 		output.metrics().Gauge("http.ConnectionDuration").Update(0)
+	}
+
+	if output.encoder != nil {
+		Log.Debugf("Close encoder")
+		output.encoder.Close()
 		output.encoder = nil
 	}
 }
