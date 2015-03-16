@@ -7,6 +7,7 @@ import (
 type StreamEncoder interface {
 	AudioOut(audio *Audio)
 	Init() error
+	Close()
 }
 
 func NewStreamEncoder(format AudioFormat, writer io.Writer) StreamEncoder {
