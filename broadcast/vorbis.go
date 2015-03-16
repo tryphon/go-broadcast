@@ -174,8 +174,6 @@ func (encoder *VorbisEncoder) Init() error {
 	encoder.sendPacket(&headerComm)
 	encoder.sendPacket(&headerCode)
 
-	encoder.vc.Clear()
-
 	return nil
 }
 
@@ -195,7 +193,10 @@ func (encoder *VorbisEncoder) AudioOut(audio *Audio) {
 	}
 
 	vorbis.AnalysisWrote(&encoder.vd, audio.SampleCount())
+	encoder.Flush()
+}
 
+func (encoder *VorbisEncoder) Flush() {
 	for vorbis.AnalysisBlockOut(&encoder.vd, &encoder.vb) == 1 {
 		vorbis.Analysis(&encoder.vb, nil)
 		vorbis.BitrateAddBlock(&encoder.vb)
@@ -206,4 +207,19 @@ func (encoder *VorbisEncoder) AudioOut(audio *Audio) {
 			encoder.sendPacket(&packet)
 		}
 	}
+}
+
+func (encoder *VorbisEncoder) Reset() {
+	encoder.vb.Clear()
+	encoder.vd.Clear()
+	encoder.vc.Clear()
+
+	encoder.vi.Clear()
+}
+
+func (encoder *VorbisEncoder) Close() {
+	vorbis.AnalysisWrote(&encoder.vd, 0)
+	encoder.Flush()
+
+	encoder.Reset()
 }
