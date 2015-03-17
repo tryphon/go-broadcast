@@ -6,6 +6,7 @@ import (
 	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
 	"github.com/tryphon/go-vorbis/vorbisenc"
+	"math/rand"
 )
 
 type VorbisDecoder struct {
@@ -118,6 +119,9 @@ type VorbisEncoder struct {
 
 	PacketHandler OggPacketHandler
 
+	identifier int
+	ready      bool
+
 	vi vorbis.Info     // struct that stores all the static vorbis bitstream settings
 	vc vorbis.Comment  // struct that stores all the user comments
 	vd vorbis.DspState // central working state for the packet PCM decoder
@@ -174,7 +178,16 @@ func (encoder *VorbisEncoder) Init() error {
 	encoder.sendPacket(&headerComm)
 	encoder.sendPacket(&headerCode)
 
+	encoder.identifier = rand.Int()
+	encoder.ready = true
+
 	return nil
+}
+
+func (encoder *VorbisEncoder) checkIsReady() {
+	if !encoder.ready {
+		panic("VorbisEncoder is not ready. Check our code")
+	}
 }
 
 func (encoder *VorbisEncoder) sendPacket(packet *ogg.Packet) {
@@ -184,6 +197,8 @@ func (encoder *VorbisEncoder) sendPacket(packet *ogg.Packet) {
 }
 
 func (encoder *VorbisEncoder) AudioOut(audio *Audio) {
+	encoder.checkIsReady()
+
 	buffer := vorbis.AnalysisBuffer(&encoder.vd, audio.SampleCount())
 
 	for samplePosition := 0; samplePosition < audio.SampleCount(); samplePosition++ {
@@ -198,6 +213,8 @@ func (encoder *VorbisEncoder) AudioOut(audio *Audio) {
 
 func (encoder *VorbisEncoder) Flush() {
 	for vorbis.AnalysisBlockOut(&encoder.vd, &encoder.vb) == 1 {
+		encoder.checkIsReady()
+
 		vorbis.Analysis(&encoder.vb, nil)
 		vorbis.BitrateAddBlock(&encoder.vb)
 
@@ -215,11 +232,16 @@ func (encoder *VorbisEncoder) Reset() {
 	encoder.vc.Clear()
 
 	encoder.vi.Clear()
+
+	encoder.ready = false
+	Log.Debugf("%d: Closed", encoder.identifier)
 }
 
 func (encoder *VorbisEncoder) Close() {
-	vorbis.AnalysisWrote(&encoder.vd, 0)
-	encoder.Flush()
+	if encoder.ready {
+		vorbis.AnalysisWrote(&encoder.vd, 0)
+		encoder.Flush()
 
-	encoder.Reset()
+		encoder.Reset()
+	}
 }

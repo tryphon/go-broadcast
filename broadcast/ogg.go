@@ -138,5 +138,6 @@ func (encoder *OggEncoder) AudioOut(audio *Audio) {
 
 func (encoder *OggEncoder) Close() {
 	encoder.Encoder.Close()
+	encoder.Encoder.PacketHandler = nil
 	encoder.Flush()
 }

@@ -61,3 +61,16 @@ func TestOggDecoder_Read(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkOggEncoder_InitClose(b *testing.B) {
+	memBenchmark := NewMemoryBenchmark(b)
+	memBenchmark.MinimumOperationCount = 100
+	defer memBenchmark.Complete()
+
+	for i := 0; i < b.N; i++ {
+		oggEncoder := OggEncoder{}
+
+		oggEncoder.Init()
+		oggEncoder.Close()
+	}
+}
