@@ -117,6 +117,10 @@ func (output *HttpStreamOutput) Start() {
 }
 
 func (output *HttpStreamOutput) Stop() {
+	if output.status != HttpStreamOutputStarted {
+		return
+	}
+
 	output.eventLog().NewEvent("Stop")
 	output.status = HttpStreamOutputStopping
 
