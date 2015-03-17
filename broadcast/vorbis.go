@@ -6,7 +6,6 @@ import (
 	ogg "github.com/tryphon/go-ogg"
 	vorbis "github.com/tryphon/go-vorbis"
 	"github.com/tryphon/go-vorbis/vorbisenc"
-	"math/rand"
 )
 
 type VorbisDecoder struct {
@@ -119,8 +118,7 @@ type VorbisEncoder struct {
 
 	PacketHandler OggPacketHandler
 
-	identifier int
-	ready      bool
+	ready bool
 
 	vi vorbis.Info     // struct that stores all the static vorbis bitstream settings
 	vc vorbis.Comment  // struct that stores all the user comments
@@ -178,7 +176,6 @@ func (encoder *VorbisEncoder) Init() error {
 	encoder.sendPacket(&headerComm)
 	encoder.sendPacket(&headerCode)
 
-	encoder.identifier = rand.Int()
 	encoder.ready = true
 
 	return nil
@@ -186,7 +183,7 @@ func (encoder *VorbisEncoder) Init() error {
 
 func (encoder *VorbisEncoder) checkIsReady() {
 	if !encoder.ready {
-		panic("VorbisEncoder is not ready. Check our code")
+		panic("VorbisEncoder is not ready")
 	}
 }
 
@@ -234,7 +231,6 @@ func (encoder *VorbisEncoder) Reset() {
 	encoder.vi.Clear()
 
 	encoder.ready = false
-	Log.Debugf("%d: Closed", encoder.identifier)
 }
 
 func (encoder *VorbisEncoder) Close() {

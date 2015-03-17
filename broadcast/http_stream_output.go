@@ -106,7 +106,6 @@ func (output *HttpStreamOutput) createConnection() (err error) {
 	encoder := NewStreamEncoder(output.Format, output)
 	encoder.Init()
 
-	Log.Debugf("New encoder")
 	output.encoder = encoder
 	return nil
 }
@@ -153,6 +152,16 @@ func (output *HttpStreamOutput) Run() {
 	output.status = HttpStreamOutputStarted
 	output.eventLog().NewEvent("Started")
 
+	defer func() {
+		if err := recover(); err != nil {
+			Log.Printf("Exception occured in HttpOutputStream : %s", err)
+		}
+
+		output.Reset()
+		output.eventLog().NewEvent("Stopped")
+		output.status = HttpStreamOutputStopped
+	}()
+
 	for output.status == HttpStreamOutputStarted {
 		if output.connection == nil {
 			err := output.createConnection()
@@ -173,10 +182,6 @@ func (output *HttpStreamOutput) Run() {
 			}
 		}
 	}
-
-	output.Reset()
-	output.eventLog().NewEvent("Stopped")
-	output.status = HttpStreamOutputStopped
 }
 
 func (output *HttpStreamOutput) GetWriteTimeout() time.Duration {

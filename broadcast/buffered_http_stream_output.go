@@ -69,8 +69,8 @@ func (output *BufferedHttpStreamOutput) Start() {
 }
 
 func (output *BufferedHttpStreamOutput) Stop() {
-	output.output.Stop()
 	output.started = false
+	output.output.Stop()
 }
 
 func (output *BufferedHttpStreamOutput) Setup(config *BufferedHttpStreamOutputConfig) {
