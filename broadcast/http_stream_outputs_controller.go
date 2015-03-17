@@ -87,7 +87,7 @@ func (controller *HttpStreamOutputsController) IndexEvents(response http.Respons
 func (controller *HttpStreamOutputsController) Show(response http.ResponseWriter, identifier string) {
 	response.Header().Set("Content-Type", "application/json")
 
-	Log.Printf("Retrieve stream : '%s'", identifier)
+	Log.Debugf("Retrieve stream : '%s'", identifier)
 	stream := controller.outputs.Stream(identifier)
 
 	if stream != nil {
@@ -108,6 +108,7 @@ func (controller *HttpStreamOutputsController) Update(response http.ResponseWrit
 	stream := controller.outputs.Stream(identifier)
 
 	if stream != nil {
+		Log.Debugf("Update stream %s : %s", identifier, string(body))
 		config := stream.Config()
 
 		err := json.Unmarshal(body, &config)
@@ -144,6 +145,8 @@ func (controller *HttpStreamOutputsController) Delete(response http.ResponseWrit
 
 func (controller *HttpStreamOutputsController) Create(response http.ResponseWriter, body []byte) {
 	response.Header().Set("Content-Type", "application/json")
+
+	Log.Debugf("Create stream : %s", string(body))
 
 	config := NewBufferedHttpStreamOutputConfig()
 	err := json.Unmarshal(body, &config)
