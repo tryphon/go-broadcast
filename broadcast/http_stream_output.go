@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+type HttpStreamOutputStatus int
+
+const (
+	HttpStreamOutputStopped HttpStreamOutputStatus = 0 + iota
+	HttpStreamOutputStarted
+	HttpStreamOutputStopping
+)
+
 type HttpStreamOutput struct {
 	Target     string
 	Format     AudioFormat
@@ -24,7 +32,7 @@ type HttpStreamOutput struct {
 	connection     net.Conn
 	connectedSince time.Time
 
-	started bool
+	status HttpStreamOutputStatus
 
 	Metrics  *LocalMetrics
 	EventLog *LocalEventLog
@@ -109,14 +117,16 @@ func (output *HttpStreamOutput) Start() {
 }
 
 func (output *HttpStreamOutput) Stop() {
-	output.started = false
 	output.eventLog().NewEvent("Stop")
-	output.Reset()
-	output.eventLog().NewEvent("Stopped")
+	output.status = HttpStreamOutputStopping
+
+	for output.status != HttpStreamOutputStopped {
+		time.Sleep(100 * time.Millisecond)
+	}
 }
 
 func (output *HttpStreamOutput) AdminStatus() string {
-	if output.started {
+	if output.status == HttpStreamOutputStarted {
 		return "started"
 	} else {
 		return "stopped"
@@ -136,10 +146,10 @@ func (output *HttpStreamOutput) OperationalStatus() string {
 }
 
 func (output *HttpStreamOutput) Run() {
-	output.started = true
+	output.status = HttpStreamOutputStarted
 	output.eventLog().NewEvent("Started")
 
-	for output.started {
+	for output.status == HttpStreamOutputStarted {
 		if output.connection == nil {
 			err := output.createConnection()
 
@@ -159,6 +169,10 @@ func (output *HttpStreamOutput) Run() {
 			}
 		}
 	}
+
+	output.Reset()
+	output.eventLog().NewEvent("Stopped")
+	output.status = HttpStreamOutputStopped
 }
 
 func (output *HttpStreamOutput) GetWriteTimeout() time.Duration {
@@ -170,19 +184,21 @@ func (output *HttpStreamOutput) GetWaitOnError() time.Duration {
 }
 
 func (output *HttpStreamOutput) Reset() {
+	if output.encoder != nil {
+		Log.Debugf("Close encoder")
+		encoder := output.encoder
+		output.encoder = nil
+		encoder.Close()
+	}
+
 	if output.connection != nil {
-		output.connection.Close()
+		connection := output.connection
 		output.connection = nil
+		connection.Close()
 
 		output.eventLog().NewEvent("Disconnected")
 		output.connectedSince = time.Time{}
 		output.metrics().Gauge("http.ConnectionDuration").Update(0)
-	}
-
-	if output.encoder != nil {
-		Log.Debugf("Close encoder")
-		output.encoder.Close()
-		output.encoder = nil
 	}
 }
 
