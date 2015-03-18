@@ -194,7 +194,6 @@ func (output *HttpStreamOutput) GetWaitOnError() time.Duration {
 
 func (output *HttpStreamOutput) Reset() {
 	if output.encoder != nil {
-		Log.Debugf("Close encoder")
 		encoder := output.encoder
 		output.encoder = nil
 		encoder.Close()
