@@ -153,5 +153,5 @@ func (config *BackupConfig) Apply(alsaInput *AlsaInput, timedFileOutput *TimedFi
 	config.Files.Apply(timedFileOutput)
 
 	timedFileOutput.SetSampleRate(alsaInput.SampleRate)
-	timedFileOutput.SetChannelCount(alsaInput.Channels)
+	timedFileOutput.SetChannelCount(alsaInput.ChannelCount())
 }

@@ -15,6 +15,7 @@ type AlsaInput struct {
 	BufferSampleCount int
 	SampleFormat      SampleFormat
 	Channels          int
+	remixer           *Remixer
 
 	audioHandler AudioHandler
 
@@ -65,6 +66,12 @@ func (input *AlsaInput) Init() (err error) {
 	input.bufferLength = input.BufferSampleCount * input.handle.FrameSize()
 	input.buffer = make([]byte, input.bufferLength)
 
+	if input.remixer != nil {
+		Log.Debugf("Alsa remixer: '%s'", input.remixer.String())
+		input.remixer.Output = input.audioHandler
+		input.audioHandler = input.remixer
+	}
+
 	return nil
 }
 
@@ -89,12 +96,23 @@ func (input *AlsaInput) Read() (err error) {
 			return err
 		}
 
-		metrics.GetOrRegisterCounter("alsa.input.Samples", nil).Inc(int64(audio.SampleCount()))
-
-		input.audioHandler.AudioOut(audio)
+		input.audioOut(audio)
 	}
 
 	return nil
+}
+
+func (input *AlsaInput) audioOut(audio *Audio) {
+	metrics.GetOrRegisterCounter("alsa.input.Samples", nil).Inc(int64(audio.SampleCount()))
+	input.audioHandler.AudioOut(audio)
+}
+
+func (input *AlsaInput) ChannelCount() int {
+	if input.remixer == nil {
+		return input.Channels
+	} else {
+		return input.remixer.OutputChannelCount()
+	}
 }
 
 func (input *AlsaInput) Run() {
@@ -109,6 +127,7 @@ type AlsaInputConfig struct {
 	BufferDuration time.Duration
 	SampleFormat   string
 	Channels       int
+	Remix          string
 }
 
 func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
@@ -117,6 +136,7 @@ func (config *AlsaInputConfig) Flags(flags *flag.FlagSet, prefix string) {
 	flags.DurationVar(&config.BufferDuration, strings.Join([]string{prefix, "buffer-duration"}, "-"), 250*time.Millisecond, "The alsa buffer duration")
 	flags.StringVar(&config.SampleFormat, strings.Join([]string{prefix, "sample-format"}, "-"), "auto", "The sample format used to record sound (s16le, s32le, s32be)")
 	flags.IntVar(&config.Channels, strings.Join([]string{prefix, "channels"}, "-"), 2, "The channels count to be used on alsa device")
+	flags.StringVar(&config.Remix, strings.Join([]string{prefix, "remix"}, "-"), "", "The remix applied on input audio channels")
 }
 
 func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
@@ -127,4 +147,8 @@ func (config *AlsaInputConfig) Apply(alsaInput *AlsaInput) {
 	alsaInput.BufferSampleCount = bufferSampleCount
 	alsaInput.SampleFormat = ParseSampleFormat(config.SampleFormat)
 	alsaInput.Channels = config.Channels
+
+	if config.Remix != "" {
+		alsaInput.remixer = NewRemixer(config.Remix)
+	}
 }
