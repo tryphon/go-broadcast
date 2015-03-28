@@ -64,6 +64,11 @@ func (output *BufferedHttpStreamOutput) eventLog() *LocalEventLog {
 }
 
 func (output *BufferedHttpStreamOutput) Start() {
+	if output.output.disabled {
+		Log.Debugf("Stream is disabled, doesn't start")
+		return
+	}
+
 	output.output.Start()
 	output.started = true
 }
@@ -94,6 +99,7 @@ func (output *BufferedHttpStreamOutput) Status() BufferedHttpStreamOutputStatus 
 		BufferedHttpStreamOutputConfig: output.Config(),
 		AdminStatus:                    output.AdminStatus(),
 		OperationalStatus:              output.OperationalStatus(),
+		ConnectionStatus:               output.output.ConnectionStatus(),
 		ConnectionDuration:             output.output.ConnectionDuration(),
 		Efficiency:                     output.efficiencyMeter.Efficiency(),
 		Events:                         output.eventLog().Events(),
@@ -110,6 +116,10 @@ func (output *BufferedHttpStreamOutput) AdminStatus() string {
 
 func (output *BufferedHttpStreamOutput) OperationalStatus() string {
 	return output.output.OperationalStatus()
+}
+
+func (output *BufferedHttpStreamOutput) ConnectionStatus() string {
+	return output.output.ConnectionStatus()
 }
 
 func (output *BufferedHttpStreamOutput) setDefaultIdentifier() {
@@ -185,8 +195,9 @@ type BufferedHttpStreamOutputConfig struct {
 
 type BufferedHttpStreamOutputStatus struct {
 	BufferedHttpStreamOutputConfig
-	AdminStatus        string // "started" / "stopped"
-	OperationalStatus  string // "connected" / "disconnected"
+	AdminStatus        string // "enabled" / "disabled"
+	OperationalStatus  string // "started" / "stopped"
+	ConnectionStatus   string // "connected" / "disconnected"
 	ConnectionDuration time.Duration
 	Efficiency         float64
 	EfficiencyHistory  IoEfficiencyMeterHistory

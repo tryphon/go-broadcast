@@ -32,7 +32,8 @@ type HttpStreamOutput struct {
 	connection     net.Conn
 	connectedSince time.Time
 
-	status HttpStreamOutputStatus
+	status   HttpStreamOutputStatus
+	disabled bool
 
 	Metrics  *LocalMetrics
 	EventLog *LocalEventLog
@@ -111,6 +112,11 @@ func (output *HttpStreamOutput) createConnection() (err error) {
 }
 
 func (output *HttpStreamOutput) Start() {
+	if output.disabled {
+		Log.Debugf("Stream is disabled, doesn't start")
+		return
+	}
+
 	output.eventLog().NewEvent("Start")
 	go output.Run()
 }
@@ -129,6 +135,14 @@ func (output *HttpStreamOutput) Stop() {
 }
 
 func (output *HttpStreamOutput) AdminStatus() string {
+	if output.disabled {
+		return "disabled"
+	} else {
+		return "enabled"
+	}
+}
+
+func (output *HttpStreamOutput) OperationalStatus() string {
 	if output.status == HttpStreamOutputStarted {
 		return "started"
 	} else {
@@ -140,7 +154,7 @@ func (output *HttpStreamOutput) IsConnected() bool {
 	return output.connection != nil
 }
 
-func (output *HttpStreamOutput) OperationalStatus() string {
+func (output *HttpStreamOutput) ConnectionStatus() string {
 	if output.IsConnected() {
 		return "connected"
 	} else {
@@ -227,6 +241,7 @@ type HttpStreamOutputConfig struct {
 	Format      string
 	Description StreamDescription
 	ServerType  string
+	Disabled    bool
 }
 
 func NewHttpStreamOutputConfig() HttpStreamOutputConfig {
@@ -243,6 +258,7 @@ func (config *HttpStreamOutputConfig) Flags(flags *flag.FlagSet, prefix string) 
 	flags.StringVar(&config.Target, strings.Join([]string{prefix, "target"}, "-"), "", "The stream URL (ex: http://source:password@stream-in.tryphon.eu:8000/mystream.ogg)")
 	flags.StringVar(&config.Format, strings.Join([]string{prefix, "format"}, "-"), defaultConfig.Format, "The stream format")
 	flags.StringVar(&config.ServerType, strings.Join([]string{prefix, "servertype"}, "-"), defaultConfig.ServerType, "The type of stream server (icecast2 or shoutcast)")
+	flags.BoolVar(&config.Disabled, strings.Join([]string{prefix, "disabled"}, "-"), false, "Disable the stream (not started)")
 }
 
 func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) {
@@ -261,4 +277,6 @@ func (config *HttpStreamOutputConfig) Apply(httpStreamOutput *HttpStreamOutput) 
 		Log.Debugf("Define BitRate in description (%d)", httpStreamOutput.Format.BitRate)
 		httpStreamOutput.Description.BitRate = httpStreamOutput.Format.BitRate
 	}
+
+	httpStreamOutput.disabled = config.Disabled
 }
