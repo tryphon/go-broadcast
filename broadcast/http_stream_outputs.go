@@ -3,6 +3,8 @@ package broadcast
 import (
 	"flag"
 	"fmt"
+	"hash/crc32"
+	"strconv"
 )
 
 type HttpStreamOutputs struct {
@@ -56,11 +58,72 @@ func (output *HttpStreamOutputs) Run() {
 
 func (output *HttpStreamOutputs) Create(config *BufferedHttpStreamOutputConfig) *BufferedHttpStreamOutput {
 	stream := NewBufferedHttpStreamOutput()
-	if config != nil {
-		stream.Setup(config)
+	if config == nil {
+		config = &BufferedHttpStreamOutputConfig{}
 	}
+
+	output.uniqStreamIdentifier(config)
+	stream.Setup(config)
+
 	output.streams = append(output.streams, stream)
 	return stream
+}
+
+func (output *HttpStreamOutputs) uniqStreamIdentifier(config *BufferedHttpStreamOutputConfig) {
+	if config.Identifier == "" && config.Target != "" {
+		config.Identifier = strconv.FormatInt(int64(crc32.ChecksumIEEE([]byte(config.Target))), 16)
+	}
+
+	validate := func(identifier string) bool {
+		if identifier == "" {
+			return false
+		}
+
+		for _, stream := range output.streams {
+			if stream.Identifier == identifier {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	if !validate(config.Identifier) {
+		generator := IdentifierGenerator{
+			Prefix:   config.Identifier,
+			Validate: validate,
+		}
+		config.Identifier = generator.Generate()
+		Log.Debugf("Change stream identifier : %s", config.Identifier)
+	}
+}
+
+type IdentifierValidator func(identifier string) bool
+
+type IdentifierGenerator struct {
+	Prefix   string
+	Index    int
+	Validate IdentifierValidator
+}
+
+func (generator *IdentifierGenerator) NextIdentifier() string {
+	generator.Index += 1
+	return generator.Identifier()
+}
+
+func (generator *IdentifierGenerator) Identifier() string {
+	if generator.Prefix != "" {
+		return fmt.Sprintf("%s-%d", generator.Prefix, generator.Index)
+	} else {
+		return strconv.Itoa(generator.Index)
+	}
+}
+
+func (generator *IdentifierGenerator) Generate() string {
+	for !generator.Validate(generator.NextIdentifier()) {
+
+	}
+	return generator.Identifier()
 }
 
 func (output *HttpStreamOutputs) SetChannelCount(channelCount int) {

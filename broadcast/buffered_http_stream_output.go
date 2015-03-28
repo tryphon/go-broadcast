@@ -81,6 +81,8 @@ func (output *BufferedHttpStreamOutput) Setup(config *BufferedHttpStreamOutputCo
 	output.unfillAudioBuffer.MaxSampleCount = uint32(float64(output.output.SampleRate()) * config.BufferDuration.Seconds())
 
 	output.config = config
+
+	output.setDefaultIdentifier()
 }
 
 func (output *BufferedHttpStreamOutput) Config() BufferedHttpStreamOutputConfig {
@@ -110,13 +112,17 @@ func (output *BufferedHttpStreamOutput) OperationalStatus() string {
 	return output.output.OperationalStatus()
 }
 
-func (output *BufferedHttpStreamOutput) Init() error {
+func (output *BufferedHttpStreamOutput) setDefaultIdentifier() {
 	if output.Identifier == "" {
 		output.Identifier = output.defaultIdentifier()
 		if output.config != nil {
 			output.config.Identifier = output.Identifier
 		}
 	}
+}
+
+func (output *BufferedHttpStreamOutput) Init() error {
+	output.setDefaultIdentifier()
 
 	output.memoryAudioBuffer.Metrics = output.metrics()
 	output.output.Metrics = output.metrics()
