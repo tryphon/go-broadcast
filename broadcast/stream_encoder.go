@@ -22,14 +22,15 @@ func NewStreamEncoder(format AudioFormat, writer io.Writer) StreamEncoder {
 			Writer:       writer,
 		}
 	case format.Encoding == "aacp":
-		return &AACPEncoder{
+		return &FDKAACEncoder{
 			SampleRate:   int(format.SampleRate),
 			ChannelCount: int(format.ChannelCount),
 			BitRate:      format.BitRate,
+			AOT:          29,
 			Writer:       writer,
 		}
 	case format.Encoding == "aac":
-		return &AACEncoder{
+		return &FDKAACEncoder{
 			SampleRate:   int(format.SampleRate),
 			ChannelCount: int(format.ChannelCount),
 			BitRate:      format.BitRate,

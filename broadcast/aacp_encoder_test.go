@@ -32,7 +32,7 @@ func TestAACPEncoder_AudioOut(t *testing.T) {
 
 	encoder.Close()
 
-	ioutil.WriteFile("testdata/lame_encoder_sine_output.aacp", buffer.Bytes(), 0644)
+	ioutil.WriteFile("testdata/aacp_encoder_sine_output.aacp", buffer.Bytes(), 0644)
 
 	// expectedBytes, err := ioutil.ReadFile("testdata/lame_encoder_sine_output.mp3")
 	// if err != nil {
