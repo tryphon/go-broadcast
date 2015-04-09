@@ -139,19 +139,24 @@ func (encoder *VorbisEncoder) Init() error {
 		encoder.Mode = "vbr"
 	}
 
-	var initResult int
+	var setupResult int
 
-	switch {
-	case encoder.Mode == "vbr":
-		initResult = vorbisenc.InitVbr(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), encoder.Quality)
-	case encoder.Mode == "cbr":
-		initResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), int32(encoder.BitRate), int32(encoder.BitRate), int32(encoder.BitRate))
-	case encoder.Mode == "abr":
-		initResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), -1, int32(encoder.BitRate), -1)
+	switch encoder.Mode {
+	case "vbr":
+		setupResult = vorbisenc.SetupVbr(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), encoder.Quality)
+	case "cbr":
+		setupResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), int32(encoder.BitRate), int32(encoder.BitRate), int32(encoder.BitRate))
+	case "abr":
+		setupResult = vorbisenc.SetupManaged(&encoder.vi, int32(encoder.ChannelCount), int32(encoder.SampleRate), -1, int32(encoder.BitRate), -1)
 	}
 
+	if setupResult != 0 {
+		return errors.New("Can't setup vorbis encoder")
+	}
+
+	initResult := vorbisenc.SetupInit(&encoder.vi)
 	if initResult != 0 {
-		return errors.New("Can't initialize vorbis encoder")
+		return errors.New("Can't init vorbis encoder")
 	}
 
 	if vorbis.AnalysisInit(&encoder.vd, &encoder.vi) != 0 {

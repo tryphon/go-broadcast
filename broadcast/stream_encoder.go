@@ -38,7 +38,7 @@ func NewStreamEncoder(format AudioFormat, writer io.Writer) StreamEncoder {
 		}
 	case format.Encoding == "ogg/vorbis":
 		encoder := OggEncoder{
-			Encoder: VorbisEncoder{
+			Encoder: &VorbisEncoder{
 				Mode:         format.Mode,
 				Quality:      format.Quality,
 				BitRate:      format.BitRate,

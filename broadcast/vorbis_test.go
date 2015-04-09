@@ -5,56 +5,40 @@ import (
 	"testing"
 )
 
-func BenchmarkVorbis_Encode_Decode(b *testing.B) {
+func BenchmarkVorbis_EncodeDecode(b *testing.B) {
 	memBenchmark := NewMemoryBenchmark(b)
 	defer memBenchmark.Complete()
 
 	for i := 0; i < b.N; i++ {
-		buffer := bytes.NewBuffer(make([]byte, 4096*1000))
+		testVorbisEncoderDecoder().Benchmark(b)
+	}
+}
 
-		oggEncoder := OggEncoder{
-			Encoder: VorbisEncoder{
-				Quality:      1,
-				ChannelCount: 2,
-				SampleRate:   44100,
-			},
-			Writer: buffer,
-		}
+func BenchmarkVorbis_EncodeDecodeCBR(b *testing.B) {
+	memBenchmark := NewMemoryBenchmark(b)
+	defer memBenchmark.Complete()
 
-		var oggDecoder OggDecoder
-		var vorbisDecoder VorbisDecoder
+	for i := 0; i < b.N; i++ {
+		encoderDecoder := testVorbisEncoderDecoder()
 
-		oggDecoder.SetHandler(&vorbisDecoder)
+		encoderDecoder.VorbisEncoder.Mode = "cbr"
+		encoderDecoder.VorbisEncoder.BitRate = 128000
 
-		var receivedAudios []*Audio
+		encoderDecoder.Benchmark(b)
+	}
+}
 
-		audioHandler := AudioHandlerFunc(func(audio *Audio) {
-			receivedAudios = append(receivedAudios, audio)
-		})
-		vorbisDecoder.audioHandler = audioHandler
+func BenchmarkVorbis_EncodeDecodeABR(b *testing.B) {
+	memBenchmark := NewMemoryBenchmark(b)
+	defer memBenchmark.Complete()
 
-		sampleCount := 1000
+	for i := 0; i < b.N; i++ {
+		encoderDecoder := testVorbisEncoderDecoder()
 
-		oggEncoder.Init()
-		for number := 0; number < sampleCount; number++ {
-			oggEncoder.AudioOut(NewAudio(1024, 2))
-		}
-		oggEncoder.Close()
+		encoderDecoder.VorbisEncoder.Mode = "abr"
+		encoderDecoder.VorbisEncoder.BitRate = 128000
 
-		for oggDecoder.Read(buffer) {
-		}
-
-		receivedSamples := 0
-		for _, receivedAudio := range receivedAudios {
-			receivedSamples += receivedAudio.SampleCount()
-		}
-
-		if receivedSamples != sampleCount*1024 {
-			b.Errorf("Wrong number of decoded samples :\n got: %v\nwant: %v", receivedSamples, sampleCount*1024)
-		}
-
-		oggDecoder.Reset()
-		vorbisDecoder.Reset()
+		encoderDecoder.Benchmark(b)
 	}
 }
 
@@ -78,4 +62,80 @@ func BenchmarkVorbisEncoder_InitReset(b *testing.B) {
 		vorbisEncoder.Init()
 		vorbisEncoder.Reset()
 	}
+}
+
+type TestVorbisEncoderDecoder struct {
+	OggEncoder    *OggEncoder
+	VorbisEncoder *VorbisEncoder
+	OggDecoder    OggDecoder
+	VorbisDecoder VorbisDecoder
+	SampleCount   int
+
+	ReceivedAudios []*Audio
+	Buffer         *bytes.Buffer
+}
+
+func (encoderDecoder *TestVorbisEncoderDecoder) Init() {
+	encoderDecoder.VorbisEncoder = &VorbisEncoder{
+		Quality:      1,
+		ChannelCount: 2,
+		SampleRate:   44100,
+	}
+
+	encoderDecoder.Buffer = bytes.NewBuffer(make([]byte, 4096*1000))
+	encoderDecoder.OggEncoder = &OggEncoder{
+		Encoder: encoderDecoder.VorbisEncoder,
+		Writer:  encoderDecoder.Buffer,
+	}
+
+	encoderDecoder.OggDecoder.SetHandler(&encoderDecoder.VorbisDecoder)
+
+	encoderDecoder.VorbisDecoder.audioHandler = AudioHandlerFunc(func(audio *Audio) {
+		encoderDecoder.ReceivedAudios = append(encoderDecoder.ReceivedAudios, audio)
+	})
+
+	encoderDecoder.SampleCount = 1000
+}
+
+func (encoderDecoder *TestVorbisEncoderDecoder) Run() error {
+	err := encoderDecoder.OggEncoder.Init()
+	if err != nil {
+		return err
+	}
+
+	for number := 0; number < encoderDecoder.SampleCount; number++ {
+		encoderDecoder.OggEncoder.AudioOut(NewAudio(1024, 2))
+	}
+	encoderDecoder.OggEncoder.Close()
+
+	for encoderDecoder.OggDecoder.Read(encoderDecoder.Buffer) {
+	}
+
+	encoderDecoder.OggDecoder.Reset()
+	encoderDecoder.VorbisDecoder.Reset()
+	return nil
+}
+
+func (encoderDecoder *TestVorbisEncoderDecoder) Check() bool {
+	receivedSamples := 0
+	for _, receivedAudio := range encoderDecoder.ReceivedAudios {
+		receivedSamples += receivedAudio.SampleCount()
+	}
+
+	return receivedSamples == encoderDecoder.SampleCount*1024
+}
+
+func (encoderDecoder *TestVorbisEncoderDecoder) Benchmark(b *testing.B) {
+	if err := encoderDecoder.Run(); err != nil {
+		b.Fatal(err)
+	}
+	if !encoderDecoder.Check() {
+		b.Errorf("Encode/decode not validated")
+	}
+}
+
+func testVorbisEncoderDecoder() *TestVorbisEncoderDecoder {
+	encoderDecoder := &TestVorbisEncoderDecoder{}
+	encoderDecoder.Init()
+	return encoderDecoder
 }

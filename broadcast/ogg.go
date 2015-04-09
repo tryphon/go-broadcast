@@ -92,7 +92,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 type OggEncoder struct {
 	Writer  io.Writer
-	Encoder VorbisEncoder
+	Encoder *VorbisEncoder
 
 	oss ogg.StreamState // take physical pages, weld into a logical stream of packets
 }
@@ -101,7 +101,11 @@ func (encoder *OggEncoder) Init() error {
 	encoder.Encoder.PacketHandler = encoder
 
 	encoder.oss.Init(rand.Int31())
-	encoder.Encoder.Init()
+	err := encoder.Encoder.Init()
+	if err != nil {
+		return err
+	}
+
 	encoder.Flush()
 	return nil
 }
