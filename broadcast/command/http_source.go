@@ -12,6 +12,7 @@ type HttpSource struct {
 	alsaInput         *broadcast.AlsaInput
 	httpStreamOutputs *broadcast.HttpStreamOutputs
 	httpServer        *broadcast.HttpServer
+	processing        *broadcast.Processing
 
 	config *HttpSourceConfig
 }
@@ -79,8 +80,12 @@ func (command *HttpSource) Main(arguments []string) {
 		Output: command.httpStreamOutputs,
 	}
 
+	command.processing = &broadcast.Processing{
+		Output: soundMeterAudioHandler,
+	}
+
 	command.alsaInput.SetAudioHandler(&broadcast.ResizeAudio{
-		Output:      soundMeterAudioHandler,
+		Output:      command.processing,
 		SampleCount: 1024,
 	})
 
@@ -96,6 +101,9 @@ func (command *HttpSource) Main(arguments []string) {
 	configController := broadcast.NewConfigController(command)
 	command.httpServer.Register("/config.json", configController)
 	command.httpServer.Register("/config/", configController)
+
+	processingController := broadcast.NewProcessingController(command.processing)
+	command.httpServer.Register("/processing.json", processingController)
 
 	command.Setup(&config)
 
@@ -116,8 +124,9 @@ func (command *HttpSource) Main(arguments []string) {
 type HttpSourceConfig struct {
 	broadcast.CommandConfig
 
-	Alsa broadcast.AlsaInputConfig
-	Http broadcast.HttpStreamOutputsConfig
+	Alsa       broadcast.AlsaInputConfig
+	Http       broadcast.HttpStreamOutputsConfig
+	Processing broadcast.ProcessingConfig
 }
 
 func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
@@ -125,6 +134,7 @@ func (config *HttpSourceConfig) Flags(flags *flag.FlagSet) {
 
 	config.Alsa.Flags(flags, "alsa")
 	config.Http.Flags(flags, "stream")
+	config.Processing.Flags(flags, "processing")
 }
 
 func (config *HttpSourceConfig) Apply(command *HttpSource) {
