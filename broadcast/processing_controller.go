@@ -50,7 +50,7 @@ func (controller *ProcessingController) Show(response http.ResponseWriter) {
 func (controller *ProcessingController) Update(response http.ResponseWriter, body []byte) {
 	response.Header().Set("Content-Type", "application/json")
 
-	Log.Debugf("Update stream %s", string(body))
+	Log.Debugf("Update processing %s", string(body))
 
 	config := controller.processing.Config()
 
