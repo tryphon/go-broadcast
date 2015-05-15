@@ -2,10 +2,12 @@ package broadcast
 
 import (
 	"errors"
+	"flag"
 	"io"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -81,6 +83,19 @@ func (input *HttpInput) Read() (err error) {
 		parsedUrl, err := url.Parse(input.Url)
 		if err != nil {
 			return err
+		}
+
+		if parsedUrl.User != nil {
+			if input.Username == "" && parsedUrl.User.Username() != "" {
+				input.Username = parsedUrl.User.Username()
+			}
+
+			if input.Password == "" {
+				password, ok := parsedUrl.User.Password()
+				if ok {
+					input.Password = password
+				}
+			}
 		}
 
 		request, err := http.NewRequest("GET", parsedUrl.String(), nil)
@@ -162,4 +177,25 @@ func (input *HttpInput) GetReadTimeout() time.Duration {
 		input.ReadTimeout = 10 * time.Second
 	}
 	return input.ReadTimeout
+}
+
+func (input *HttpInput) Setup(config *HttpStreamInputConfig) {
+	input.Url = config.Url
+
+	input.ReadTimeout = config.ReadTimeout
+	input.WaitOnError = config.WaitOnError
+}
+
+type HttpStreamInputConfig struct {
+	Url string
+
+	ReadTimeout time.Duration
+	WaitOnError time.Duration
+}
+
+func (config *HttpStreamInputConfig) Flags(flags *flag.FlagSet, prefix string) {
+	flags.StringVar(&config.Url, strings.Join([]string{prefix, "url"}, "-"), "", "URL of played stream")
+
+	flags.DurationVar(&config.ReadTimeout, strings.Join([]string{prefix, "readtimeout"}, "-"), 10*time.Second, "Timeout on read operations")
+	flags.DurationVar(&config.WaitOnError, strings.Join([]string{prefix, "waitonerror"}, "-"), 5*time.Second, "Delay after a network error")
 }

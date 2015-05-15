@@ -4,6 +4,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultSampleRate = 44100
+)
+
 type AudioHandler interface {
 	AudioOut(audio *Audio)
 }

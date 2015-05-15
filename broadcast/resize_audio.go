@@ -33,6 +33,7 @@ func (resize *ResizeAudio) maxSampleCount(sampleCount int) int {
 
 func (resize *ResizeAudio) AudioOut(audio *Audio) {
 	if resize.ChannelCount == 0 {
+		Log.Debugf("Default channelcount: %d", audio.ChannelCount())
 		resize.ChannelCount = audio.ChannelCount()
 	}
 

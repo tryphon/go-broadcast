@@ -12,6 +12,10 @@ type Processing struct {
 	config    *ProcessingConfig
 }
 
+func (processing *Processing) SetAudioHandler(audioHandler AudioHandler) {
+	processing.Output = audioHandler
+}
+
 func (processing *Processing) AudioOut(audio *Audio) {
 	if processing.amplifier.Output == nil {
 		processing.amplifier.Output = processing.Output

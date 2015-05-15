@@ -27,6 +27,9 @@ func main() {
 	switch commandName {
 	case "httpclient":
 		httpClient(os.Args[2:])
+	case "play":
+		play := command.Play{}
+		play.Main(os.Args[2:])
 	case "httpSource":
 		httpSource := command.HttpSource{}
 		httpSource.Main(os.Args[2:])
