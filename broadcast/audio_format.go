@@ -87,3 +87,17 @@ func (format *AudioFormat) ContentType() string {
 	}
 	return ""
 }
+
+func FindEncodingByContentType(contentType string) string {
+	switch contentType {
+	case "audio/mpeg":
+		return "mp3"
+	case "application/ogg":
+		return "ogg/vorbis"
+	case "audio/aac":
+		return "aac"
+	case "audio/aacp":
+		return "aacp"
+	}
+	return ""
+}

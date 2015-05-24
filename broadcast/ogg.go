@@ -1,6 +1,7 @@
 package broadcast
 
 import (
+	"errors"
 	ogg "github.com/tryphon/go-ogg"
 	"io"
 	"math/rand"
@@ -21,6 +22,10 @@ func (decoder *OggDecoder) Reset() {
 	decoder.og.Reset()
 
 	decoder.oss.SerialNo = 0
+
+	if resettable, ok := decoder.handler.(Resettable); ok {
+		resettable.Reset()
+	}
 }
 
 type OggPacketHandler interface {
@@ -36,22 +41,30 @@ func (decoder *OggDecoder) SetHandler(handler OggHandler) {
 	decoder.handler = handler
 }
 
-func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
-	result = false
+func (decoder *OggDecoder) SetAudioHandler(audioHandler AudioHandler) {
+	if audioHandlerSupport, ok := decoder.handler.(AudioHandlerSupport); ok {
+		audioHandlerSupport.SetAudioHandler(audioHandler)
+	}
+}
 
-	defer func() {
-		if err := recover(); err != nil {
-			Log.Printf("Exception occured in Ogg/Vorbis decoder : %s", err)
-			result = false
-		}
-	}()
+func (decoder *OggDecoder) Init() error {
+	return nil
+}
+
+func (decoder *OggDecoder) Read(reader io.Reader) error {
+	// defer func() {
+	// 	if err := recover(); err != nil {
+	// 		Log.Printf("Exception occured in Ogg/Vorbis decoder : %s", err)
+	// 		return err
+	// 	}
+	// }()
 
 	buffer := decoder.oy.Buffer(4096)
 
 	readLength, err := reader.Read(buffer)
 
 	if err != nil {
-		return
+		return err
 	}
 
 	decoder.oy.Wrote(readLength)
@@ -66,7 +79,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 
 		err = decoder.oss.PageIn(&decoder.og)
 		if err != nil {
-			return
+			return err
 		}
 
 		var packetOutResult = 1
@@ -74,7 +87,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 			packetOutResult = decoder.oss.PacketOut(&decoder.op)
 			if packetOutResult == 1 {
 				if !decoder.handler.PacketOut(&decoder.op) {
-					return
+					return errors.New("Can't decode packet")
 				}
 			}
 		}
@@ -86,8 +99,7 @@ func (decoder *OggDecoder) Read(reader io.Reader) (result bool) {
 		}
 	}
 
-	result = true
-	return
+	return nil
 }
 
 type OggEncoder struct {

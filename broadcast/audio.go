@@ -21,6 +21,10 @@ func (f AudioHandlerFunc) AudioOut(audio *Audio) {
 	f(audio)
 }
 
+type AudioHandlerSupport interface {
+	SetAudioHandler(audioHandler AudioHandler)
+}
+
 type AudioProvider interface {
 	Read() *Audio
 }

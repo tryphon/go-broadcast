@@ -42,7 +42,7 @@ const (
 )
 
 func (err MadError) IsRecoverable() bool {
-	return err&0xff00 == 0
+	return err&0xff00 != 0
 }
 
 func (err MadError) String() string {
@@ -57,13 +57,15 @@ func (decoder *MadDecoder) SetAudioHandler(audioHandler AudioHandler) {
 	decoder.audioHandler = audioHandler
 }
 
-func (decoder *MadDecoder) Init() {
+func (decoder *MadDecoder) Init() error {
 	C.mad_stream_init(&decoder.stream)
 	C.mad_frame_init(&decoder.frame)
 	C.mad_synth_init(&decoder.synth)
+
+	return nil
 }
 
-func (decoder *MadDecoder) Close() {
+func (decoder *MadDecoder) Reset() {
 	C.mad_frame_finish(&decoder.frame)
 	C.mad_stream_finish(&decoder.stream)
 }
@@ -74,7 +76,7 @@ func (decoder *MadDecoder) Read(reader io.Reader) error {
 	}
 
 	readCount, err := reader.Read(decoder.readBuffer)
-	Log.Debugf("Read: %d bytes, err: %v", readCount, err)
+	// Log.Debugf("Read: %d bytes, err: %v", readCount, err)
 	if err != nil {
 		return err
 	}
@@ -88,24 +90,22 @@ func (decoder *MadDecoder) Read(reader io.Reader) error {
 		buffer = append(decoder.pendingBuffer, buffer...)
 	}
 
-	Log.Debugf("Decode %d bytes", len(buffer))
+	// Log.Debugf("Decode %d bytes", len(buffer))
 
 	C.mad_stream_buffer(&decoder.stream, (*C.uchar)(unsafe.Pointer(&buffer[0])), (C.ulong)(len(buffer)))
 
 	for {
 		if C.mad_frame_decode(&decoder.frame, &decoder.stream) != 0 {
-			Log.Debugf("Stream error: %v", decoder.streamError())
-
 			if decoder.streamError() == MadErrorBufferLength {
 				break
 			}
 
+			Log.Debugf("Stream error: %v", decoder.streamError())
 			if streamError := decoder.streamError(); !streamError.IsRecoverable() {
 				return streamError.Error()
 			}
 		}
 
-		Log.Debugf("Synth frame")
 		C.mad_synth_frame(&decoder.synth, &decoder.frame)
 
 		decoder.output()
@@ -121,9 +121,9 @@ func (decoder *MadDecoder) streamError() MadError {
 }
 
 func (decoder *MadDecoder) streamPendingBuffer() []byte {
-	Log.Debugf("Buffer begin: %v, next frame: %v, end: %v", decoder.stream.buffer, decoder.stream.next_frame, decoder.stream.bufend)
 	pendingLength := C.mad_decoder_pending_buffer_length(&decoder.stream)
-	Log.Debugf("Pending buffer length: %d", pendingLength)
+	// Log.Debugf("Pending buffer length: %d", pendingLength)
+
 	// C.GoBytes seems to be copy data
 	return C.GoBytes(unsafe.Pointer(decoder.stream.next_frame), pendingLength)
 }
@@ -145,6 +145,6 @@ func (decoder *MadDecoder) output() {
 		return floatSample
 	})
 
-	Log.Debugf("Output audio: %d", audio.SampleCount())
+	// Log.Debugf("Output audio: %d", audio.SampleCount())
 	decoder.audioHandler.AudioOut(audio)
 }

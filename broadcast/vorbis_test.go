@@ -108,7 +108,7 @@ func (encoderDecoder *TestVorbisEncoderDecoder) Run() error {
 	}
 	encoderDecoder.OggEncoder.Close()
 
-	for encoderDecoder.OggDecoder.Read(encoderDecoder.Buffer) {
+	for encoderDecoder.OggDecoder.Read(encoderDecoder.Buffer) == nil {
 	}
 
 	encoderDecoder.OggDecoder.Reset()

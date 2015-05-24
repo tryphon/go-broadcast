@@ -3,6 +3,7 @@ package broadcast
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -20,8 +21,8 @@ type HttpInput struct {
 	reader     io.ReadCloser
 	connection net.Conn
 
-	oggDecoder    OggDecoder
-	vorbisDecoder VorbisDecoder
+	streamDecoder StreamDecoder
+	audioHandler  AudioHandler
 
 	ReadTimeout time.Duration
 	WaitOnError time.Duration
@@ -72,8 +73,6 @@ func (input *HttpInput) Init() (err error) {
 		Transport:     &transport,
 		CheckRedirect: input.checkRedirect,
 	}
-
-	input.oggDecoder.SetHandler(&input.vorbisDecoder)
 
 	return nil
 }
@@ -127,13 +126,28 @@ func (input *HttpInput) Read() (err error) {
 			return err
 		}
 
+		contentType := response.Header.Get("Content-Type")
+		Log.Printf("Stream content type: %s", contentType)
+
+		audioEncoding := FindEncodingByContentType(contentType)
+		Log.Printf("Stream audio encoding: %s", audioEncoding)
+
+		input.streamDecoder = NewStreamDecoder(audioEncoding)
+
+		if input.streamDecoder == nil {
+			return fmt.Errorf("Unsupported audio type: content-type=%s encoding=%s", contentType, audioEncoding)
+		}
+
+		input.streamDecoder.SetAudioHandler(input.audioHandler)
+		input.streamDecoder.Init()
+
 		input.reader = NewMetricsReadCloser(response.Body, "http.input.Traffic")
 	}
 
-	if input.oggDecoder.Read(input.reader) {
+	if err = input.streamDecoder.Read(input.reader); err == nil {
 		input.updateDeadline()
 	} else {
-		Log.Printf("End of HTTP stream")
+		Log.Printf("End of HTTP stream : %v", err)
 		input.Reset()
 	}
 
@@ -146,12 +160,14 @@ func (input *HttpInput) Reset() {
 		input.reader = nil
 	}
 
-	input.oggDecoder.Reset()
-	input.vorbisDecoder.Reset()
+	input.streamDecoder.Reset()
 }
 
 func (input *HttpInput) SetAudioHandler(audioHandler AudioHandler) {
-	input.vorbisDecoder.audioHandler = audioHandler
+	input.audioHandler = audioHandler
+	if input.streamDecoder != nil {
+		input.streamDecoder.SetAudioHandler(audioHandler)
+	}
 }
 
 func (input *HttpInput) Run() {
