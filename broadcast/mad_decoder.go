@@ -5,10 +5,9 @@ package broadcast
 #include "mad.h"
 
 // no typedef in mad.h
-typedef struct mad_stream mad_stream_t;
-typedef struct mad_frame mad_frame_t;
-typedef struct mad_synth mad_synth_t;
-typedef struct mad_pcm mad_pcm_t;
+typedef struct mad_stream mad_stream;
+typedef struct mad_frame mad_frame;
+typedef struct mad_synth mad_synth;
 
 int mad_decoder_pending_buffer_length(struct mad_stream *stream) {
   return stream->bufend - stream->next_frame;
@@ -30,9 +29,9 @@ type MadDecoder struct {
 	readBuffer    []byte
 	pendingBuffer []byte
 
-	stream C.mad_stream_t
-	frame  C.mad_frame_t
-	synth  C.mad_synth_t
+	stream C.mad_stream
+	frame  C.mad_frame
+	synth  C.mad_synth
 }
 
 type MadError int
